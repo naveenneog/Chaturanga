@@ -6,11 +6,18 @@
   "description": "Chaturanga — the ancient Indian game of the four army divisions, played with modern chess moves and authentic piece identities. Every world teaches moral values and life-and-battlefield lessons through its pieces; realistic 3D pieces per world.",
   "scripts": {
     "test": "node --test",
-    "serve": "node scripts/serve.mjs"
+    "serve": "node scripts/serve.mjs",
+    "apk": "powershell -ExecutionPolicy Bypass -File tooling/build_apk.ps1",
+    "cap:copy": "cap copy android"
   },
   "license": "PolyForm-Noncommercial-1.0.0",
   "devDependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
     "jsdom": "^29.1.1",
     "playwright": "^1.61.1"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.4.1"
   }
 }

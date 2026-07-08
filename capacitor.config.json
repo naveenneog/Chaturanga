@@ -1,0 +1,11 @@
+{
+  "appId": "com.naveenneog.chaturanga",
+  "appName": "Chaturanga",
+  "webDir": "web",
+  "android": {
+    "allowMixedContent": true
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}
