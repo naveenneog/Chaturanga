@@ -31,6 +31,12 @@ if (!(Test-Path "$root\android")) {
 # Sync current web assets into the native project
 npx --yes cap copy android
 
+# Regenerate app icons + splash from resources/ (so branding survives android/ regen)
+if (Test-Path "$root\resources\logo.png") {
+  Write-Host "generating app icons + splash from resources/"
+  npx --yes @capacitor/assets generate --assetPath resources --android
+}
+
 # Set the app version
 $gradle = "$root\android\app\build.gradle"
 (Get-Content $gradle -Raw) -replace 'versionName "[^"]*"', "versionName ""$Version""" | Set-Content $gradle -Encoding utf8
