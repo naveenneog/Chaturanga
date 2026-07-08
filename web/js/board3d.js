@@ -1,0 +1,358 @@
+// Chaturanga — real 3D board (Three.js). Modern chess rules via chess.js,
+// authentic Chaturanga piece identities + per-world moral teachings that are
+// revealed and read aloud on select / capture / promotion. Local hotseat.
+import * as THREE from '../vendor/three.module.js';
+import { newGame, TYPE_TO_KEY, selectMoment, moveMoment } from './rules.js';
+import { makePiece } from './pieces3d.js';
+
+const $ = (s) => document.querySelector(s);
+const FILES = 'abcdefgh';
+const hexInt = (h) => parseInt(String(h || '#000').replace('#', ''), 16) || 0;
+const easeIO = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+const tween = (dur, fn) => new Promise((res) => {
+  const t0 = performance.now();
+  const step = () => { const p = Math.min(1, (performance.now() - t0) / dur); fn(p); p < 1 ? requestAnimationFrame(step) : res(); };
+  requestAnimationFrame(step);
+});
+
+// board square <-> world position. col0=a file, row0=rank 1 (white's home, near +z).
+const squareName = (col, row) => FILES[col] + (row + 1);
+const posOf = (col, row) => new THREE.Vector3(col - 3.5, 0, 3.5 - row);
+function cellFromXZ(x, z) {
+  const col = Math.round(x + 3.5), row = Math.round(3.5 - z);
+  return (col >= 0 && col < 8 && row >= 0 && row < 8) ? { col, row, square: squareName(col, row) } : null;
+}
+
+const WORLDS = [['kurukshetra', 'Kurukshetra']];
+
+async function main() {
+  const params = new URLSearchParams(location.search);
+  const worldFile = (params.get('world') || 'kurukshetra').replace(/[^a-z]/gi, '');
+  const world = await (await fetch(`worlds/${worldFile}.json`)).json();
+  const T = world.theme || {};
+  document.title = `${world.title} — Chaturanga`;
+  $('#title').textContent = world.title;
+
+  const game = newGame();
+
+  // ---------- renderer / scene ----------
+  const MOBILE = matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 820;
+  const renderer = new THREE.WebGLRenderer({ antialias: !MOBILE, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, MOBILE ? 1.5 : 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.shadowMap.enabled = !MOBILE;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  $('#stage').appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const bg = hexInt(T.bg || '#1a0f08');
+  scene.background = new THREE.Color(bg);
+  scene.fog = new THREE.Fog(bg, 40, 120);
+
+  const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 200);
+
+  scene.add(new THREE.HemisphereLight(hexInt(T.accent || '#e8a33d'), hexInt(T.panel || '#241308'), 0.7));
+  const key = new THREE.DirectionalLight(0xfff2e0, 1.25);
+  key.position.set(5, 11, 6);
+  if (!MOBILE) {
+    key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024);
+    const d = 7; Object.assign(key.shadow.camera, { left: -d, right: d, top: d, bottom: -d, near: 1, far: 30 });
+    key.shadow.bias = -0.0006;
+  }
+  scene.add(key);
+  scene.add(new THREE.AmbientLight(hexInt(T.panel || '#241308'), 0.55));
+
+  const boardGroup = new THREE.Group();
+  scene.add(boardGroup);
+
+  // plinth
+  const plinth = new THREE.Mesh(
+    new THREE.BoxGeometry(9.4, 0.5, 9.4),
+    new THREE.MeshStandardMaterial({ color: hexInt(T.dark || '#6b4423'), roughness: 0.9 }),
+  );
+  plinth.position.y = -0.28; plinth.receiveShadow = true;
+  boardGroup.add(plinth);
+  const frame = new THREE.Mesh(
+    new THREE.BoxGeometry(8.7, 0.16, 8.7),
+    new THREE.MeshStandardMaterial({ color: hexInt(T.accent || '#e8a33d'), roughness: 0.6, metalness: 0.3 }),
+  );
+  frame.position.y = -0.04; frame.receiveShadow = true;
+  boardGroup.add(frame);
+
+  // 64 squares as one InstancedMesh (per-instance colour)
+  const sqGeo = new THREE.BoxGeometry(0.98, 0.08, 0.98);
+  const sqMat = new THREE.MeshStandardMaterial({ roughness: 0.7 });
+  const squares = new THREE.InstancedMesh(sqGeo, sqMat, 64);
+  squares.receiveShadow = true;
+  const light = new THREE.Color(hexInt(T.light || '#d9b98a'));
+  const dark = new THREE.Color(hexInt(T.dark || '#6b4423'));
+  const dummy = new THREE.Object3D();
+  let i = 0;
+  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+    const p = posOf(col, row);
+    dummy.position.set(p.x, 0, p.z); dummy.updateMatrix();
+    squares.setMatrixAt(i, dummy.matrix);
+    squares.setColorAt(i, (col + row) % 2 === 0 ? dark : light);
+    i++;
+  }
+  squares.instanceMatrix.needsUpdate = true;
+  if (squares.instanceColor) squares.instanceColor.needsUpdate = true;
+  boardGroup.add(squares);
+
+  // ---------- piece meshes ----------
+  const whiteMat = new THREE.MeshStandardMaterial({ color: hexInt(T.whiteArmy || '#efe4c8'), roughness: 0.55, metalness: 0.08 });
+  const blackMat = new THREE.MeshStandardMaterial({ color: hexInt(T.blackArmy || '#3a2418'), roughness: 0.5, metalness: 0.18 });
+  const piecesGroup = new THREE.Group();
+  boardGroup.add(piecesGroup);
+  let meshBySquare = new Map();
+
+  function syncPieces() {
+    piecesGroup.clear();
+    meshBySquare = new Map();
+    const b = game.board();
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      const cell = b[r][c];
+      if (!cell) continue;
+      const row = 7 - r, col = c; // r0 = rank8
+      const key2 = TYPE_TO_KEY[cell.type];
+      const g = makePiece(key2, cell.color === 'w' ? whiteMat : blackMat);
+      const p = posOf(col, row);
+      g.position.set(p.x, 0, p.z);
+      if (g.userData.facing) g.rotation.y = cell.color === 'w' ? Math.PI / 2 : -Math.PI / 2;
+      g.userData.square = cell.square;
+      piecesGroup.add(g);
+      meshBySquare.set(cell.square, g);
+    }
+  }
+  syncPieces();
+
+  // ---------- selection + move markers ----------
+  const markers = new THREE.Group();
+  boardGroup.add(markers);
+  const selRing = new THREE.Mesh(
+    new THREE.TorusGeometry(0.42, 0.05, 12, 36),
+    new THREE.MeshBasicMaterial({ color: hexInt(T.accent || '#e8a33d'), transparent: true, opacity: 0.85 }),
+  );
+  selRing.rotation.x = Math.PI / 2; selRing.visible = false; selRing.position.y = 0.06;
+  boardGroup.add(selRing);
+
+  let selected = null; // {square, moves:[verbose]}
+  function clearMarkers() { markers.clear(); selRing.visible = false; selected = null; }
+  function showMoves(square) {
+    const moves = game.moves({ square, verbose: true });
+    if (!moves.length) return false;
+    selected = { square, moves };
+    const c = cellFromName(square);
+    selRing.position.set(c.x, 0.06, c.z); selRing.visible = true;
+    for (const mv of moves) {
+      const t = cellFromName(mv.to);
+      const capture = mv.flags.includes('c') || mv.flags.includes('e');
+      const mk = capture
+        ? new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.045, 10, 28), new THREE.MeshBasicMaterial({ color: 0xff5c5c, transparent: true, opacity: 0.85 }))
+        : new THREE.Mesh(new THREE.CircleGeometry(0.16, 24), new THREE.MeshBasicMaterial({ color: hexInt(T.accent || '#e8a33d'), transparent: true, opacity: 0.7 }));
+      mk.rotation.x = -Math.PI / 2; mk.position.set(t.x, 0.07, t.z);
+      markers.add(mk);
+    }
+    return true;
+  }
+  const cellFromName = (sq) => { const col = FILES.indexOf(sq[0]), row = +sq[1] - 1; return posOf(col, row); };
+
+  // ---------- move execution ----------
+  let busy = false;
+  async function doMove(from, to) {
+    const mv = game.move({ from, to, promotion: 'q' });
+    if (!mv) return;
+    busy = true;
+    clearMarkers();
+    const mesh = meshBySquare.get(from);
+    const dest = cellFromName(to);
+    // fade a captured piece (normal or en-passant)
+    const capSquare = mv.flags.includes('e') ? to[0] + from[1] : to;
+    const capMesh = mv.captured ? meshBySquare.get(capSquare) : null;
+    if (capMesh) fadeOut(capMesh);
+    if (mesh) {
+      const a = mesh.position.clone();
+      await tween(360, (p) => {
+        const e = easeIO(p);
+        mesh.position.x = a.x + (dest.x - a.x) * e;
+        mesh.position.z = a.z + (dest.z - a.z) * e;
+        mesh.position.y = Math.sin(p * Math.PI) * (mv.piece === 'n' ? 0.6 : 0.28);
+      });
+    }
+    syncPieces(); // reconcile castling / en-passant / promotion
+    const state = { check: game.inCheck(), checkmate: game.isCheckmate() };
+    reveal(moveMoment(world, mv, state));
+    updateStatus();
+    busy = false;
+  }
+  function fadeOut(g) {
+    g.traverse((n) => { if (n.material) { n.material = n.material.clone(); n.material.transparent = true; } });
+    tween(340, (p) => g.traverse((n) => { if (n.material) n.material.opacity = 1 - p; n.scale?.setScalar?.(1 - 0.4 * p); }));
+  }
+
+  // ---------- picking ----------
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const hit = new THREE.Vector3();
+  function pick(clientX, clientY) {
+    ndc.set((clientX / innerWidth) * 2 - 1, -(clientY / innerHeight) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    if (!ray.ray.intersectPlane(ground, hit)) return null;
+    return cellFromXZ(hit.x, hit.z);
+  }
+  function onTap(cell) {
+    if (busy || !cell || game.isGameOver()) return;
+    const piece = game.get(cell.square);
+    if (selected) {
+      const legal = selected.moves.find((m) => m.to === cell.square);
+      if (legal) { doMove(selected.square, cell.square); return; }
+      if (piece && piece.color === game.turn()) { clearMarkers(); select(cell.square); return; }
+      clearMarkers(); return;
+    }
+    if (piece && piece.color === game.turn()) select(cell.square);
+  }
+  function select(square) {
+    const piece = game.get(square);
+    if (!showMoves(square)) { clearMarkers(); }
+    reveal(selectMoment(world, piece.type), true);
+  }
+
+  // ---------- teaching card + narration ----------
+  let cardTimer = null;
+  function reveal(m, quiet) {
+    if (!m) return;
+    const kindLabel = { select: 'Dharma', pawn: 'The Foot-soldier', capture: 'Battlefield', promotion: 'Reborn', check: 'Peril', checkmate: 'Victory', move: 'Dharma' }[m.kind] || 'Dharma';
+    $('#cKind').textContent = kindLabel;
+    $('#cKind').className = 'kind ' + m.kind;
+    $('#cName').textContent = (m.glyph ? m.glyph + '  ' : '') + (m.title || m.name || '');
+    $('#cEn').textContent = m.en ? '— ' + m.en : (m.moral || '');
+    const text = m.teaching || m.line || '';
+    $('#cMeaning').textContent = text;
+    $('#card').classList.add('show');
+    clearTimeout(cardTimer);
+    cardTimer = setTimeout(() => $('#card').classList.remove('show'), m.kind === 'select' ? 4200 : 6500);
+    if (!quiet || m.kind === 'select') speak(text);
+  }
+  let muted = false;
+  function speak(text) {
+    if (muted || !text || !window.speechSynthesis) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.95; u.pitch = 1; u.lang = (world.voice && world.voice.web) || 'en-IN';
+      const v = speechSynthesis.getVoices().find((vo) => /en-IN|Indian/i.test(vo.lang + vo.name)) || null;
+      if (v) u.voice = v;
+      speechSynthesis.speak(u);
+    } catch { /* ignore */ }
+  }
+
+  // ---------- status / turn ----------
+  const sideName = (c) => (world.sides ? (c === 'w' ? world.sides.white : world.sides.black) : (c === 'w' ? 'White' : 'Black'));
+  function updateStatus() {
+    let s;
+    if (game.isCheckmate()) s = `♚ Checkmate — ${sideName(game.turn() === 'w' ? 'b' : 'w')} wins`;
+    else if (game.isStalemate()) s = 'Stalemate — a draw';
+    else if (game.isDraw()) s = 'Draw';
+    else s = `${sideName(game.turn())} to move${game.inCheck() ? ' · Raja in check!' : ''}`;
+    $('#status').textContent = s;
+    const w = game.turn() === 'w';
+    $('#turn').innerHTML = `
+      <span class="side ${w ? 'on' : ''}"><span class="dot" style="background:${T.whiteArmy || '#efe4c8'}"></span>${sideName('w')}</span>
+      <span class="side ${!w ? 'on' : ''}"><span class="dot" style="background:${T.blackArmy || '#3a2418'}"></span>${sideName('b')}</span>`;
+  }
+
+  // ---------- camera (orbit + pinch + fit) ----------
+  const BOARD_R = 6.3;
+  const cam = { radius: 12, baseRadius: 12, theta: Math.PI / 2, phi: 0.82, t: new THREE.Vector3(0, 0, 0) };
+  const PRESETS = [
+    { name: 'Sitting', radius: 11, theta: Math.PI / 2, phi: 0.86 },
+    { name: 'Top', radius: 11, theta: Math.PI / 2, phi: 0.12 },
+    { name: 'Duel', radius: 10, theta: Math.PI / 2, phi: 1.2 },
+    { name: 'Corner', radius: 12, theta: Math.PI / 4, phi: 0.8 },
+  ];
+  let presetIdx = 0, camTween = null, flip = false;
+  const fitRadius = (base) => {
+    const vHalf = (camera.fov * Math.PI) / 360;
+    const hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);
+    return Math.max(base, BOARD_R / Math.sin(Math.min(vHalf, hHalf)));
+  };
+  // steeper, fuller view on tall/portrait phones so the board isn't a shallow band
+  const presetPhi = (p) => (camera.aspect < 0.85 && p.name === 'Sitting' ? 0.52 : p.phi);
+  function applyPreset(p, instant) {
+    cam.baseRadius = p.radius;
+    const theta = p.theta + (flip ? Math.PI : 0);
+    const ph = presetPhi(p);
+    if (instant) { cam.radius = fitRadius(p.radius); cam.theta = theta; cam.phi = ph; }
+    else camTween = { from: { r: cam.radius, th: cam.theta, ph: cam.phi }, to: { r: fitRadius(p.radius), th: theta, ph }, t0: performance.now(), dur: 900 };
+  }
+  applyPreset(PRESETS[0], true);
+  function updateCamera() {
+    if (camTween) {
+      const p = Math.min(1, (performance.now() - camTween.t0) / camTween.dur), e = easeIO(p), a = camTween.from, b = camTween.to;
+      cam.radius = a.r + (b.r - a.r) * e; cam.theta = a.th + (b.th - a.th) * e; cam.phi = a.ph + (b.ph - a.ph) * e;
+      if (p >= 1) camTween = null;
+    }
+    const sp = Math.max(0.06, Math.min(1.4, cam.phi));
+    camera.position.set(cam.t.x + cam.radius * Math.sin(sp) * Math.cos(cam.theta), cam.t.y + cam.radius * Math.cos(sp), cam.t.z + cam.radius * Math.sin(sp) * Math.sin(cam.theta));
+    camera.lookAt(cam.t);
+  }
+
+  // ---------- input ----------
+  const el = renderer.domElement;
+  const ptrs = new Map();
+  let lx = 0, ly = 0, pinchD = 0, moved = 0, downX = 0, downY = 0;
+  const pinchDist = () => { const a = [...ptrs.values()]; return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); };
+  el.addEventListener('pointerdown', (e) => { ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); lx = e.clientX; ly = e.clientY; downX = e.clientX; downY = e.clientY; moved = 0; if (ptrs.size === 2) pinchD = pinchDist(); });
+  const up = (e) => {
+    const wasTap = ptrs.has(e.pointerId) && moved < 8 && ptrs.size === 1;
+    ptrs.delete(e.pointerId); if (ptrs.size < 2) pinchD = 0;
+    if (wasTap) { const cell = pick(e.clientX, e.clientY); onTap(cell); }
+  };
+  window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', (e) => { ptrs.delete(e.pointerId); });
+  window.addEventListener('pointermove', (e) => {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    moved += Math.abs(e.clientX - lx) + Math.abs(e.clientY - ly);
+    if (ptrs.size >= 2) { const d = pinchDist(); if (pinchD > 0 && d > 0) cam.radius = Math.max(6, Math.min(30, cam.radius * (pinchD / d))); pinchD = d; camTween = null; return; }
+    if (moved > 6) { camTween = null; cam.theta -= (e.clientX - lx) * 0.006; cam.phi = Math.max(0.08, Math.min(1.4, cam.phi - (e.clientY - ly) * 0.006)); }
+    lx = e.clientX; ly = e.clientY;
+  });
+  el.addEventListener('wheel', (e) => { e.preventDefault(); cam.radius = Math.max(6, Math.min(30, cam.radius + Math.sign(e.deltaY) * 1)); }, { passive: false });
+  addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); if (!camTween) cam.radius = fitRadius(cam.baseRadius); });
+
+  // ---------- HUD ----------
+  const sel = $('#worldSel');
+  sel.innerHTML = WORLDS.map(([id, n]) => `<option value="${id}"${id === worldFile ? ' selected' : ''}>${n}</option>`).join('');
+  sel.addEventListener('change', () => { location.search = `?world=${sel.value}`; });
+  $('#newBtn').addEventListener('click', () => { game.reset(); syncPieces(); clearMarkers(); $('#card').classList.remove('show'); updateStatus(); });
+  $('#viewBtn').addEventListener('click', () => { presetIdx = (presetIdx + 1) % PRESETS.length; $('#viewName').textContent = PRESETS[presetIdx].name; applyPreset(PRESETS[presetIdx]); });
+  $('#flipBtn').addEventListener('click', () => { flip = !flip; applyPreset(PRESETS[presetIdx]); });
+  $('#muteBtn').addEventListener('click', () => { muted = !muted; if (muted) speechSynthesis?.cancel?.(); $('#muteBtn').textContent = muted ? '🔇' : '🔊'; });
+  document.querySelectorAll('nav a').forEach((a) => { a.href = `${a.getAttribute('href').split('?')[0]}?world=${worldFile}`; });
+
+  updateStatus();
+  renderer.setAnimationLoop(() => {
+    updateCamera();
+    const t = performance.now() * 0.001;
+    selRing.material.opacity = 0.55 + Math.sin(t * 4) * 0.25;
+    selRing.rotation.z = t * 0.6;
+    renderer.render(scene, camera);
+  });
+
+  window.__cReady = true;
+  window.__c = {
+    fen: () => game.fen(),
+    turn: () => game.turn(),
+    move: (from, to) => doMove(from, to),
+    tap: (sq) => onTap({ col: FILES.indexOf(sq[0]), row: +sq[1] - 1, square: sq }),
+    selected: () => (selected ? selected.square : null),
+    card: () => ({ shown: $('#card').classList.contains('show'), kind: $('#cKind').textContent, name: $('#cName').textContent, text: $('#cMeaning').textContent }),
+    info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles }),
+    view: () => PRESETS[presetIdx].name,
+  };
+}
+
+main();

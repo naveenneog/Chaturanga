@@ -1,0 +1,16 @@
+{
+  "name": "chaturanga",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Chaturanga — the ancient Indian game of the four army divisions, played with modern chess moves and authentic piece identities. Every world teaches moral values and life-and-battlefield lessons through its pieces; realistic 3D pieces per world.",
+  "scripts": {
+    "test": "node --test",
+    "serve": "node scripts/serve.mjs"
+  },
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "devDependencies": {
+    "jsdom": "^29.1.1",
+    "playwright": "^1.61.1"
+  }
+}
