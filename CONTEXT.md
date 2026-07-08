@@ -82,8 +82,11 @@ concept image. Reproduce with the `.venv3d` (Python 3.11 via `uv`, torch CPU):
 - Diagnostics/tools: `tooling/blender/inspect_glb.py` (3 framed views) and `axis_views.py`
   (±X/±Y/top, to read a mesh's native orientation). Research notes: `tooling/3d_pipeline_research.md`.
 - **Known limits (iterate):** TripoSR is soft/melty on thin parts (horse mane, elephant trunk,
-  chhatra parasol); the projection is one-sided (back is mirrored/plain ivory). Options: higher
-  `--resolution`, per-piece `CAM`, or a stronger local engine (Hunyuan3D-2mini) later.
+  chhatra parasol); the projection is front/back only. **Tested & ruled out locally:** res 400
+  is only marginally cleaner than 256 (softness is inherent), and **Hunyuan3D-2mini is NOT
+  CPU-feasible** (stalled >16 min at ~13 GB RAM, no output — needs a GPU). Best remaining levers:
+  a cleaner concept **pose** (solid silhouette), per-piece `CAM`, or a cloud image-to-3D key
+  (Meshy/Rodin free tier) for crisper geometry.
 
 ## 3D pieces (legacy hand-modelled Blender pipeline — fallback)
 - **Model:** `blender --background --python tooling/blender/model_pieces.py` (Blender 5.1 at
