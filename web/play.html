@@ -40,12 +40,37 @@
       #introGrad { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, transparent 40%, rgba(13,7,3,.55) 100%), linear-gradient(to top, rgba(13,7,3,.95), transparent 45%); }
       #introTitle { position: absolute; top: 12%; left: 0; right: 0; text-align: center; font-size: clamp(2rem, 8vw, 4.2rem); letter-spacing: .18em; color: #ffd98a; text-shadow: 0 0 40px rgba(232,163,61,.7); }
       #introEnter { position: absolute; bottom: 16%; font: inherit; font-size: 1.1rem; color: #241200; background: linear-gradient(180deg, #ffcf7a, #e8a33d); border: 0; border-radius: 14px; padding: .9rem 1.8rem; cursor: pointer; box-shadow: 0 10px 30px rgba(232,163,61,.45); min-height: 48px; }
+      #opening { position: fixed; top: 5.3rem; left: 50%; transform: translateX(-50%); font-size: .74rem; letter-spacing: .04em; color: #ffe6bb; background: rgba(0,0,0,.5); border: 1px solid rgba(232,163,61,.4); border-radius: 999px; padding: .25rem .8rem; opacity: 0; transition: opacity .3s; pointer-events: none; max-width: 90vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      #opening.show { opacity: 1; }
+      #thinking { position: fixed; top: 5.3rem; right: .8rem; width: 12px; height: 12px; border-radius: 50%; background: #e8a33d; box-shadow: 0 0 10px #e8a33d; opacity: 0; }
+      #thinking.show { opacity: 1; animation: pulse 1s infinite; }
+      @keyframes pulse { 0%,100% { transform: scale(.7); opacity: .5; } 50% { transform: scale(1.15); opacity: 1; } }
+      #coach { position: fixed; left: 50%; top: 6.6rem; transform: translateX(-50%) translateY(-8px); width: min(92vw, 440px); background: linear-gradient(180deg, #21304a, #141d2e); border: 1px solid rgba(120,170,255,.4); border-radius: 12px; padding: .6rem .9rem; font-size: .9rem; line-height: 1.4; color: #dce7ff; box-shadow: 0 12px 30px rgba(0,0,0,.5); opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; z-index: 62; }
+      #coach.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+      #coach.warn { background: linear-gradient(180deg, #4a2320, #2a1310); border-color: rgba(255,120,100,.5); color: #ffdcd4; }
+      #coach.nudge { background: linear-gradient(180deg, #234a30, #12261a); border-color: rgba(120,255,160,.4); color: #d6ffe2; }
+      #coach b { color: #fff; }
+      #inspector { position: fixed; top: 6.2rem; right: .6rem; width: 156px; background: linear-gradient(180deg, rgba(42,22,8,.92), rgba(24,13,5,.92)); border: 1px solid rgba(232,163,61,.4); border-radius: 14px; padding: .5rem; box-shadow: 0 14px 34px rgba(0,0,0,.55); opacity: 0; transform: translateX(12px); transition: opacity .3s, transform .3s; pointer-events: none; z-index: 55; }
+      #inspector.show { opacity: 1; transform: translateX(0); }
+      #inspName { text-align: center; font-size: .82rem; color: #ffe6bb; margin: 0 0 .2rem; }
+      #inspCanvas { width: 100%; height: 150px; display: block; }
+      #moveGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin-top: .35rem; }
+      #moveGrid i { aspect-ratio: 1; border-radius: 3px; background: rgba(255,255,255,.06); }
+      #moveGrid i.mv, #moveGrid i.move { background: #e8a33d; }
+      #moveGrid i.cap { background: #c0392b; }
+      #moveGrid i.me { background: #f4e6cd; box-shadow: 0 0 0 1px #e8a33d inset; }
+      #moveCap { text-align: center; font-size: .6rem; color: #b79b74; margin: .3rem 0 0; }
       @media (max-width: 640px) {
         #title { display: none; }
         #status { top: calc(.7rem + env(safe-area-inset-top, 0px)); }
         #turn { top: calc(2rem + env(safe-area-inset-top, 0px)); }
         #hint { display: none; }
         #card { bottom: 10.5rem; }
+        #opening { top: calc(3.4rem + env(safe-area-inset-top, 0px)); }
+        #thinking { top: calc(3.4rem + env(safe-area-inset-top, 0px)); }
+        #coach { top: calc(4.6rem + env(safe-area-inset-top, 0px)); }
+        #inspector { top: calc(4.4rem + env(safe-area-inset-top, 0px)); width: 132px; }
+        #inspCanvas { height: 122px; }
       }
     </style>
   </head>
@@ -63,12 +88,23 @@
     <div id="title">Chaturanga</div>
     <div id="status">White to move</div>
     <div id="turn"></div>
+    <div id="opening"></div>
+    <div id="thinking"></div>
+    <div id="coach"></div>
+    <div id="inspector">
+      <p id="inspName"></p>
+      <canvas id="inspCanvas"></canvas>
+      <div id="moveGrid"></div>
+      <p id="moveCap">how it moves · <span style="color:#e8a33d">◾</span> move <span style="color:#c0392b">◾</span> capture</p>
+    </div>
     <div id="hint">tap a piece to see its dharma · tap a glowing square to move · drag to orbit</div>
     <div id="card"><span id="cKind" class="kind"></span><h2 id="cName"></h2><p class="en" id="cEn"></p><p class="m" id="cMeaning"></p></div>
     <div id="hud">
       <button id="newBtn">↻ New</button>
+      <button id="hintBtn" title="Coach hint">💡 Hint</button>
       <select id="worldSel" title="World"></select>
       <button id="viewBtn">🎥 <span id="viewName">Sitting</span></button>
+      <button id="eyeBtn" title="Warrior's Eye view">👁</button>
       <button id="flipBtn" title="Flip board">⇅ Flip</button>
       <button id="muteBtn" title="Read aloud on/off">🔊</button>
     </div>

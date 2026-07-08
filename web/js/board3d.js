@@ -5,6 +5,8 @@ import * as THREE from '../vendor/three.module.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { newGame, TYPE_TO_KEY, selectMoment, moveMoment } from './rules.js';
 import { makePiece } from './pieces3d.js';
+import { bestMove as bestMoveMain, LEVELS, levelById } from './engine.js';
+import { hint as hintMain, reviewMove as reviewMain, openingNote } from './coach.js';
 
 const $ = (s) => document.querySelector(s);
 const FILES = 'abcdefgh';
@@ -34,7 +36,35 @@ async function main() {
   document.title = `${world.title} — Chaturanga`;
   $('#title').textContent = world.title;
 
+  // ---------- game mode: vs AI (pick side+level) or local hotseat ----------
+  const MODE = params.get('mode') === 'hotseat' ? 'hotseat' : 'ai';
+  const HUMAN = params.get('side') === 'b' ? 'b' : 'w';   // human's army in AI mode
+  const LEVEL = levelById(+(params.get('level') || 3));
+  const vsAI = MODE === 'ai';
+  const isHumanTurn = () => MODE === 'hotseat' || game.turn() === HUMAN;
+
   const game = newGame();
+
+  // ---------- AI worker (keeps search off the render thread; main-thread fallback) ----------
+  let worker = null;
+  try { worker = new Worker(new URL('./engine.worker.js', import.meta.url), { type: 'module' }); } catch { worker = null; }
+  const pending = new Map();
+  let reqId = 0;
+  if (worker) worker.onmessage = (e) => {
+    const { id, result, error } = e.data || {};
+    const p = pending.get(id); if (!p) return; pending.delete(id);
+    error ? p.rej(new Error(error)) : p.res(result);
+  };
+  function think(kind, payload) {
+    if (worker) return new Promise((res, rej) => { const id = ++reqId; pending.set(id, { res, rej }); worker.postMessage({ id, kind, ...payload }); });
+    return new Promise((res) => setTimeout(() => {
+      try {
+        if (kind === 'hint') res(hintMain(payload.fen, payload.level));
+        else if (kind === 'review') res(reviewMain(payload.fen, payload.move, { depth: 3, maxMs: 700 }));
+        else res(bestMoveMain(payload.fen, payload.level));
+      } catch { res(null); }
+    }, 24));
+  }
 
   // ---------- renderer / scene ----------
   const MOBILE = matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 820;
@@ -237,8 +267,9 @@ async function main() {
   const cellFromName = (sq) => { const col = FILES.indexOf(sq[0]), row = +sq[1] - 1; return posOf(col, row); };
 
   // ---------- move execution ----------
-  let busy = false;
-  async function doMove(from, to) {
+  let busy = false, aiThinking = false;
+  async function doMove(from, to, opt = {}) {
+    const fenBefore = game.fen();
     const mv = game.move({ from, to, promotion: 'q' });
     if (!mv) return;
     busy = true;
@@ -262,7 +293,30 @@ async function main() {
     const state = { check: game.inCheck(), checkmate: game.isCheckmate() };
     reveal(moveMoment(world, mv, state));
     updateStatus();
+    showOpening();
     busy = false;
+    // coach: review a HUMAN move (only in AI mode, and not on game-ending moves)
+    if (vsAI && !opt.ai && !game.isGameOver()) reviewHuman(fenBefore, mv);
+    // AI reply
+    if (vsAI && !game.isGameOver() && game.turn() !== HUMAN) aiMove();
+  }
+
+  async function aiMove() {
+    if (aiThinking) return;
+    aiThinking = true; busy = true;
+    setThinking(true);
+    try {
+      const r = await think('best', { fen: game.fen(), level: LEVEL.id });
+      if (r && r.move) { busy = false; await doMove(r.move.from, r.move.to, { ai: true }); }
+    } catch { /* ignore; leave it human's move */ }
+    finally { aiThinking = false; busy = false; setThinking(false); }
+  }
+
+  async function reviewHuman(fenBefore, mv) {
+    try {
+      const r = await think('review', { fen: fenBefore, move: { from: mv.from, to: mv.to, promotion: mv.promotion } });
+      if (r && r.tone === 'warn') showCoach(r);
+    } catch { /* ignore */ }
   }
   function fadeOut(g) {
     g.traverse((n) => { if (n.material) { n.material = n.material.clone(); n.material.transparent = true; } });
@@ -281,7 +335,8 @@ async function main() {
     return cellFromXZ(hit.x, hit.z);
   }
   function onTap(cell) {
-    if (busy || !cell || game.isGameOver()) return;
+    if (busy || aiThinking || !cell || game.isGameOver()) return;
+    if (vsAI && !isHumanTurn()) return;               // wait your turn against the AI
     const piece = game.get(cell.square);
     if (selected) {
       const legal = selected.moves.find((m) => m.to === cell.square);
@@ -295,6 +350,8 @@ async function main() {
     const piece = game.get(square);
     if (!showMoves(square)) { clearMarkers(); }
     reveal(selectMoment(world, piece.type), true);
+    inspectPiece(piece.type, piece.color);            // rotating render + movement pattern
+    if (eyeMode) setEye(square, piece.color, piece.type);
   }
 
   // ---------- teaching card + narration ----------
@@ -340,6 +397,23 @@ async function main() {
       <span class="side ${w ? 'on' : ''}"><span class="dot" style="background:${T.whiteArmy || '#efe4c8'}"></span>${sideName('w')}</span>
       <span class="side ${!w ? 'on' : ''}"><span class="dot" style="background:${T.blackArmy || '#3a2418'}"></span>${sideName('b')}</span>`;
   }
+  function showOpening() {
+    const badge = $('#opening'); if (!badge) return;
+    const n = openingNote(game.history());
+    if (n) { badge.textContent = `${n.name} — ${n.sub}`; badge.classList.add('show'); badge.title = n.idea; }
+    else badge.classList.remove('show');
+  }
+  let coachTimer = null;
+  function showCoach(r) {
+    const c = $('#coach'); if (!c) return;
+    c.className = 'coach show ' + (r.tone || '');
+    c.innerHTML = `<b>${r.title}.</b> ${r.message}`;
+    clearTimeout(coachTimer); coachTimer = setTimeout(() => c.classList.remove('show'), 6500);
+  }
+  function setThinking(on) {
+    const dot = $('#thinking'); if (dot) dot.classList.toggle('show', on);
+    if (on) $('#status').textContent = `${LEVEL.name} is thinking…`; else updateStatus();
+  }
 
   // ---------- camera (orbit + pinch + fit) ----------
   const BOARD_R = 6.3;
@@ -350,7 +424,17 @@ async function main() {
     { name: 'Duel', radius: 10, theta: Math.PI / 2, phi: 1.2 },
     { name: 'Corner', radius: 12, theta: Math.PI / 4, phi: 0.8 },
   ];
-  let presetIdx = 0, camTween = null, flip = false;
+  let presetIdx = 0, camTween = null, flip = vsAI && HUMAN === 'b';
+  let eyeMode = false, eyeTarget = null;
+  function setEye(square, color, type) {
+    const p = cellFromName(square);
+    const h = (TARGET_H[TYPE_TO_KEY[type]] || 0.9);
+    const fwd = color === 'w' ? -1 : 1;               // enemy lies toward -z for white, +z for black
+    eyeTarget = {
+      pos: new THREE.Vector3(p.x, h * 0.94 + 0.06, p.z - fwd * 0.05),
+      look: new THREE.Vector3(p.x, 0.3, p.z + fwd * 3.4),
+    };
+  }
   const fitRadius = (base) => {
     const vHalf = (camera.fov * Math.PI) / 360;
     const hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);
@@ -367,6 +451,11 @@ async function main() {
   }
   applyPreset(PRESETS[0], true);
   function updateCamera() {
+    if (eyeMode && eyeTarget) {
+      camera.position.lerp(eyeTarget.pos, 0.18);
+      camera.lookAt(eyeTarget.look);
+      return;
+    }
     if (camTween) {
       const p = Math.min(1, (performance.now() - camTween.t0) / camTween.dur), e = easeIO(p), a = camTween.from, b = camTween.to;
       cam.radius = a.r + (b.r - a.r) * e; cam.theta = a.th + (b.th - a.th) * e; cam.phi = a.ph + (b.ph - a.ph) * e;
@@ -401,23 +490,107 @@ async function main() {
   el.addEventListener('wheel', (e) => { e.preventDefault(); cam.radius = Math.max(6, Math.min(30, cam.radius + Math.sign(e.deltaY) * 1)); }, { passive: false });
   addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); if (!camTween) cam.radius = fitRadius(cam.baseRadius); });
 
+  // ---------- piece inspector: a small rotating render + movement diagram ----------
+  let insp = null;
+  function initInspector() {
+    const canvas = document.getElementById('inspCanvas');
+    if (!canvas) return null;
+    const r = new THREE.WebGLRenderer({ canvas, antialias: !MOBILE, alpha: true });
+    r.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    const w = canvas.clientWidth || 150, h = canvas.clientHeight || 168;
+    r.setSize(w, h, false);
+    const sc = new THREE.Scene();
+    const cm = new THREE.PerspectiveCamera(38, w / h, 0.1, 50);
+    cm.position.set(0, 0.35, 3.2);
+    sc.add(new THREE.HemisphereLight(0xffffff, 0x2a1a0e, 1.05));
+    const dl = new THREE.DirectionalLight(0xfff2e0, 1.4); dl.position.set(2, 4, 3); sc.add(dl);
+    if (scene.environment) sc.environment = scene.environment;
+    const holder = new THREE.Group(); sc.add(holder);
+    return { r, sc, cm, holder };
+  }
+  function inspectPiece(type, color) {
+    if (!insp) insp = initInspector();
+    if (!insp) return;
+    insp.holder.clear();
+    const key = TYPE_TO_KEY[type];
+    const g = pieceFor(key, color);
+    const box = new THREE.Box3().setFromObject(g); const size = new THREE.Vector3(); box.getSize(size);
+    g.scale.setScalar(1.7 / (size.y || 1)); g.updateMatrixWorld(true);
+    const b2 = new THREE.Box3().setFromObject(g); const c = new THREE.Vector3(); b2.getCenter(c);
+    g.position.set(-c.x, -(b2.min.y + (b2.max.y - b2.min.y) / 2), -c.z);
+    insp.holder.add(g);
+    drawMovePattern(key);
+    const info = world.pieces[key] || {};
+    const nm = $('#inspName'); if (nm) nm.textContent = `${info.glyph || ''} ${info.name || key}`.trim();
+    const panel = $('#inspector'); if (panel) panel.classList.add('show');
+  }
+  function moveOffsets(key) {
+    const O = []; const line = (df, dr) => { for (let i = 1; i <= 2; i++) O.push([df * i, dr * i]); };
+    if (key === 'ratha' || key === 'mantri') { line(1, 0); line(-1, 0); line(0, 1); line(0, -1); }
+    if (key === 'gaja' || key === 'mantri') { line(1, 1); line(-1, 1); line(1, -1); line(-1, -1); }
+    if (key === 'ashva') [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]].forEach((o) => O.push(o));
+    if (key === 'raja') [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].forEach((o) => O.push(o));
+    if (key === 'padati') O.push([0, 1, 'move'], [0, 2, 'move'], [1, 1, 'cap'], [-1, 1, 'cap']);
+    return O;
+  }
+  function drawMovePattern(key) {
+    const grid = $('#moveGrid'); if (!grid) return;
+    const O = moveOffsets(key);
+    const at = (df, dr) => O.find((o) => o[0] === df && o[1] === dr);
+    let html = '';
+    for (let r = 0; r < 5; r++) for (let col = 0; col < 5; col++) {
+      const df = col - 2, dr = 2 - r; let cls = 'mc';
+      if (df === 0 && dr === 0) cls += ' me';
+      else { const o = at(df, dr); if (o) cls += ' ' + (o[2] || 'mv'); }
+      html += `<i class="${cls}"></i>`;
+    }
+    grid.innerHTML = html;
+  }
+  function hintArrow(from, to) {
+    clearMarkers();
+    const a = cellFromName(from), b = cellFromName(to);
+    const r1 = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.05, 12, 36), new THREE.MeshBasicMaterial({ color: 0x66ff9c, transparent: true, opacity: 0.9 }));
+    r1.rotation.x = Math.PI / 2; r1.position.set(a.x, 0.07, a.z); markers.add(r1);
+    const r2 = new THREE.Mesh(new THREE.RingGeometry(0.26, 0.4, 28), new THREE.MeshBasicMaterial({ color: 0x66ff9c, transparent: true, opacity: 0.9, side: THREE.DoubleSide }));
+    r2.rotation.x = -Math.PI / 2; r2.position.set(b.x, 0.075, b.z); markers.add(r2);
+    setTimeout(() => { if (!selected) clearMarkers(); }, 3200);
+  }
+
   // ---------- HUD ----------
   const sel = $('#worldSel');
   sel.innerHTML = WORLDS.map(([id, n]) => `<option value="${id}"${id === worldFile ? ' selected' : ''}>${n}</option>`).join('');
   sel.addEventListener('change', () => { location.search = `?world=${sel.value}`; });
-  $('#newBtn').addEventListener('click', () => { game.reset(); syncPieces(); clearMarkers(); $('#card').classList.remove('show'); updateStatus(); });
-  $('#viewBtn').addEventListener('click', () => { presetIdx = (presetIdx + 1) % PRESETS.length; $('#viewName').textContent = PRESETS[presetIdx].name; applyPreset(PRESETS[presetIdx]); });
+  $('#newBtn').addEventListener('click', () => {
+    game.reset(); syncPieces(); clearMarkers();
+    $('#card').classList.remove('show');
+    $('#coach')?.classList.remove('show'); $('#opening')?.classList.remove('show'); $('#inspector')?.classList.remove('show');
+    eyeTarget = null; updateStatus();
+    if (vsAI && game.turn() !== HUMAN) aiMove();
+  });
+  $('#viewBtn').addEventListener('click', () => { eyeMode = false; $('#eyeBtn')?.classList.remove('on'); presetIdx = (presetIdx + 1) % PRESETS.length; $('#viewName').textContent = PRESETS[presetIdx].name; applyPreset(PRESETS[presetIdx]); });
   $('#flipBtn').addEventListener('click', () => { flip = !flip; applyPreset(PRESETS[presetIdx]); });
   $('#muteBtn').addEventListener('click', () => { muted = !muted; if (muted) speechSynthesis?.cancel?.(); $('#muteBtn').textContent = muted ? '🔇' : '🔊'; });
+  $('#hintBtn')?.addEventListener('click', async () => {
+    if (busy || aiThinking || game.isGameOver() || (vsAI && !isHumanTurn())) return;
+    const h = await think('hint', { fen: game.fen(), level: LEVEL.id });
+    if (h) { hintArrow(h.from, h.to); showCoach({ tone: 'nudge', title: 'Hint', message: `${h.san} — ${h.why}` }); }
+  });
+  $('#eyeBtn')?.addEventListener('click', () => {
+    eyeMode = !eyeMode; $('#eyeBtn').classList.toggle('on', eyeMode);
+    if (eyeMode && selected) { const p = game.get(selected.square); if (p) setEye(selected.square, p.color, p.type); }
+    else { eyeTarget = null; applyPreset(PRESETS[presetIdx]); }
+  });
   document.querySelectorAll('nav a').forEach((a) => { a.href = `${a.getAttribute('href').split('?')[0]}?world=${worldFile}`; });
 
   updateStatus();
+  if (vsAI && game.turn() !== HUMAN) aiMove();          // AI opens when the human plays black
   renderer.setAnimationLoop(() => {
     updateCamera();
     const t = performance.now() * 0.001;
     selRing.material.opacity = 0.55 + Math.sin(t * 4) * 0.25;
     selRing.rotation.z = t * 0.6;
     renderer.render(scene, camera);
+    if (insp && $('#inspector')?.classList.contains('show')) { insp.holder.rotation.y = t * 0.9; insp.r.render(insp.sc, insp.cm); }
   });
 
   window.__cReady = true;
@@ -429,8 +602,11 @@ async function main() {
     selected: () => (selected ? selected.square : null),
     card: () => ({ shown: $('#card').classList.contains('show'), kind: $('#cKind').textContent, name: $('#cName').textContent, text: $('#cMeaning').textContent }),
     info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles }),
-    view: () => PRESETS[presetIdx].name,
-    cam: (o) => { camTween = null; Object.assign(cam, o || {}); return { r: cam.radius, theta: cam.theta, phi: cam.phi }; },
+    view: () => (eyeMode ? "Warrior's Eye" : PRESETS[presetIdx].name),
+    cam: (o) => { camTween = null; eyeMode = false; Object.assign(cam, o || {}); return { r: cam.radius, theta: cam.theta, phi: cam.phi }; },
+    mode: () => MODE, level: () => LEVEL.id, human: () => HUMAN,
+    aiThinking: () => aiThinking,
+    inspector: () => ({ shown: !!$('#inspector')?.classList.contains('show'), name: $('#inspName')?.textContent || '' }),
   };
 }
 
