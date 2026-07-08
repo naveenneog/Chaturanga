@@ -1,6 +1,9 @@
 """Chaturanga intro cinematic — Azure Sora-2 (AAD auth). Writes web/assets/<world>/intro.mp4.
 
-Usage: python tooling/gen_intro.py [world] [seconds]   # seconds in {4,8,12}, default 8
+Usage: python tooling/gen_intro.py [world] [seconds] [size]
+  seconds in {4,8,12}, default 8
+  size default 720x1280 (portrait, mobile form factor); pass 1280x720 for landscape.
+  Writes intro.mp4 for portrait, intro_land.mp4 for landscape (so both can coexist).
 """
 import json
 import pathlib
@@ -18,12 +21,22 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 PROMPTS = {
     "kurukshetra": (
-        "Cinematic slow push-in over an ancient Indian battlefield at dawn — the field of Kurukshetra. "
+        "Vertical cinematic tilt-up over an ancient Indian battlefield at dawn — the field of Kurukshetra. "
         "A vast carved stone chessboard rests on the plain; on it stand two armies of beautifully carved "
         "ivory and dark-rosewood Chaturanga pieces: elephants with howdahs, horses, chariot-towers, a "
         "crowned king under a parasol, foot-soldiers with spears. Warm golden dawn light and drifting dust "
-        "and incense haze, conch-shell and war-drum mood, reverent and mythic like the Bhagavad Gita. "
-        "Shallow depth of field, volumetric light. No text, no words, no watermark."
+        "and incense haze. A stirring devotional folk score rises — deep war-drums (mridangam), a droning "
+        "veena, and a lone conch-shell call, reverent and mythic like the Bhagavad Gita. "
+        "Framed vertically for a phone screen, shallow depth of field, volumetric light, slow reverent "
+        "camera move. No text, no words, no watermark."
+    ),
+    "ramayana": (
+        "Vertical cinematic push-in across a moonlit causeway to golden Lanka — the war of the Ramayana. "
+        "A carved stone chessboard bridges the sea; on it stand two armies of carved ivory and dark-rosewood "
+        "figures: vanara war-monkeys, bears, chariots, a crowned prince with a great bow, foot-soldiers. "
+        "Silver moonlight, sea-spray haze and torch-fire. A heroic devotional folk score — booming drums, "
+        "flutes and a conch — swells with courage and longing. Framed vertically for a phone screen, "
+        "shallow depth of field, volumetric light. No text, no words, no watermark."
     ),
 }
 
@@ -58,10 +71,13 @@ def log(m):
 def main():
     world = sys.argv[1] if len(sys.argv) > 1 else "kurukshetra"
     seconds = sys.argv[2] if len(sys.argv) > 2 else "8"
+    size = sys.argv[3] if len(sys.argv) > 3 else "720x1280"
     prompt = PROMPTS.get(world)
     if not prompt:
         raise SystemExit(f"no intro prompt for world '{world}'")
-    out = ROOT / "web" / "assets" / world / "intro.mp4"
+    portrait = int(size.split("x")[0]) <= int(size.split("x")[1])
+    name = "intro.mp4" if portrait else "intro_land.mp4"
+    out = ROOT / "web" / "assets" / world / name
     out.parent.mkdir(parents=True, exist_ok=True)
     out.with_suffix(".prompt.txt").write_text(prompt, encoding="utf-8")
 
@@ -69,8 +85,8 @@ def main():
     while vid is None:
         try:
             with req("POST", f"{ENDPOINT}/openai/v1/videos?api-version={API_VERSION}",
-                     {"model": MODEL, "prompt": prompt, "seconds": seconds, "size": "1280x720"}) as r:
-                vid = json.loads(r.read())["id"]; log(f"submitted -> {vid}")
+                     {"model": MODEL, "prompt": prompt, "seconds": seconds, "size": size}) as r:
+                vid = json.loads(r.read())["id"]; log(f"submitted -> {vid} ({size})")
         except urllib.error.HTTPError as e:
             if e.code == 429:
                 log("429 on submit; backoff 45s"); time.sleep(45)
