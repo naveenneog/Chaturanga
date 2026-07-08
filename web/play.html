@@ -35,6 +35,11 @@
       #card .en { color: #b79b74; font-style: italic; margin: 0; }
       #card .m { margin: .55rem 0 0; font-size: 1.03rem; line-height: 1.5; }
       #hint { position: fixed; left: 0; right: 0; bottom: 4.6rem; text-align: center; font-size: .72rem; color: #8a745a; pointer-events: none; }
+      #intro { position: fixed; inset: 0; z-index: 100; background: #0d0703; display: flex; align-items: center; justify-content: center; transition: opacity .7s; }
+      #introVid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      #introGrad { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, transparent 40%, rgba(13,7,3,.55) 100%), linear-gradient(to top, rgba(13,7,3,.95), transparent 45%); }
+      #introTitle { position: absolute; top: 12%; left: 0; right: 0; text-align: center; font-size: clamp(2rem, 8vw, 4.2rem); letter-spacing: .18em; color: #ffd98a; text-shadow: 0 0 40px rgba(232,163,61,.7); }
+      #introEnter { position: absolute; bottom: 16%; font: inherit; font-size: 1.1rem; color: #241200; background: linear-gradient(180deg, #ffcf7a, #e8a33d); border: 0; border-radius: 14px; padding: .9rem 1.8rem; cursor: pointer; box-shadow: 0 10px 30px rgba(232,163,61,.45); min-height: 48px; }
       @media (max-width: 640px) {
         #title { display: none; }
         #status { top: calc(.7rem + env(safe-area-inset-top, 0px)); }
@@ -45,6 +50,12 @@
     </style>
   </head>
   <body>
+    <div id="intro">
+      <video id="introVid" muted playsinline preload="auto"></video>
+      <div id="introGrad"></div>
+      <div id="introTitle">Chaturanga</div>
+      <button id="introEnter">⚔ Enter the field of dharma</button>
+    </div>
     <nav>
       <a href="setup.html" id="lobbyLink">⚙ Lobby</a>
     </nav>
@@ -62,5 +73,19 @@
       <button id="muteBtn" title="Read aloud on/off">🔊</button>
     </div>
     <script type="module" src="js/board3d.js"></script>
+    <script>
+      (function () {
+        var ov = document.getElementById('intro'), v = document.getElementById('introVid');
+        var wf = (new URLSearchParams(location.search).get('world') || 'kurukshetra').replace(/[^a-z]/gi, '');
+        var done = false;
+        function dismiss() { if (done) return; done = true; ov.style.opacity = 0; setTimeout(function () { ov.style.display = 'none'; }, 700); try { v.pause(); } catch (e) {} }
+        document.getElementById('introEnter').addEventListener('click', dismiss);
+        v.addEventListener('ended', dismiss);
+        v.addEventListener('error', dismiss);       // e.g. codec unsupported -> don't trap the user
+        v.src = 'assets/' + wf + '/intro.mp4';
+        var pr = v.play(); if (pr && pr.catch) pr.catch(function () {});
+        setTimeout(function () { if (v.readyState < 2) dismiss(); }, 4000); // missing/stalled video safety
+      })();
+    </script>
   </body>
 </html>

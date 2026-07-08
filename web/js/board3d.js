@@ -43,6 +43,8 @@ async function main() {
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = !MOBILE;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
   $('#stage').appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
@@ -52,14 +54,26 @@ async function main() {
 
   const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 200);
 
+  // ---------- image-based lighting (generated environment) for real reflections ----------
+  const ASSET_BASE = world.assets || `assets/${worldFile}`;
+  const texLoader = new THREE.TextureLoader();
+  const pmrem = new THREE.PMREMGenerator(renderer); pmrem.compileEquirectangularShader();
+  texLoader.load(`${ASSET_BASE}/env.jpg`, (tex) => {
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    const rt = pmrem.fromEquirectangular(tex);
+    scene.environment = rt.texture;
+    tex.dispose();
+  }, undefined, () => { /* env optional */ });
+
   scene.add(new THREE.HemisphereLight(hexInt(T.accent || '#e8a33d'), hexInt(T.panel || '#241308'), 0.7));
   const key = new THREE.DirectionalLight(0xfff2e0, 1.25);
   key.position.set(5, 11, 6);
   if (!MOBILE) {
     key.castShadow = true;
-    key.shadow.mapSize.set(1024, 1024);
-    const d = 7; Object.assign(key.shadow.camera, { left: -d, right: d, top: d, bottom: -d, near: 1, far: 30 });
-    key.shadow.bias = -0.0006;
+    key.shadow.mapSize.set(2048, 2048);
+    const d = 6.5; Object.assign(key.shadow.camera, { left: -d, right: d, top: d, bottom: -d, near: 1, far: 30 });
+    key.shadow.bias = -0.0002;
+    key.shadow.normalBias = 0.03;
   }
   scene.add(key);
   scene.add(new THREE.AmbientLight(hexInt(T.panel || '#241308'), 0.55));
@@ -81,29 +95,34 @@ async function main() {
   frame.position.y = -0.04; frame.receiveShadow = true;
   boardGroup.add(frame);
 
-  // 64 squares as one InstancedMesh (per-instance colour)
+  // 8x8 squares as two InstancedMeshes (light + dark) with generated stone/wood textures
   const sqGeo = new THREE.BoxGeometry(0.98, 0.08, 0.98);
-  const sqMat = new THREE.MeshStandardMaterial({ roughness: 0.7 });
-  const squares = new THREE.InstancedMesh(sqGeo, sqMat, 64);
-  squares.receiveShadow = true;
-  const light = new THREE.Color(hexInt(T.light || '#d9b98a'));
-  const dark = new THREE.Color(hexInt(T.dark || '#6b4423'));
+  const lightMat = new THREE.MeshStandardMaterial({ color: hexInt(T.light || '#d9b98a'), roughness: 0.55, metalness: 0.05, envMapIntensity: 0.6 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: hexInt(T.dark || '#6b4423'), roughness: 0.5, metalness: 0.05, envMapIntensity: 0.6 });
+  const maxAniso = renderer.capabilities.getMaxAnisotropy();
+  const applyTex = (mat, file) => texLoader.load(`${ASSET_BASE}/${file}`, (t) => {
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = maxAniso;
+    mat.map = t; mat.color.set(0xffffff); mat.needsUpdate = true;
+  }, undefined, () => {});
+  applyTex(lightMat, 'board-light.jpg');
+  applyTex(darkMat, 'board-dark.jpg');
+  const lightIM = new THREE.InstancedMesh(sqGeo, lightMat, 32);
+  const darkIM = new THREE.InstancedMesh(sqGeo, darkMat, 32);
+  lightIM.receiveShadow = darkIM.receiveShadow = true;
   const dummy = new THREE.Object3D();
-  let i = 0;
+  let li = 0, di = 0;
   for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
     const p = posOf(col, row);
     dummy.position.set(p.x, 0, p.z); dummy.updateMatrix();
-    squares.setMatrixAt(i, dummy.matrix);
-    squares.setColorAt(i, (col + row) % 2 === 0 ? dark : light);
-    i++;
+    if ((col + row) % 2 === 0) darkIM.setMatrixAt(di++, dummy.matrix);
+    else lightIM.setMatrixAt(li++, dummy.matrix);
   }
-  squares.instanceMatrix.needsUpdate = true;
-  if (squares.instanceColor) squares.instanceColor.needsUpdate = true;
-  boardGroup.add(squares);
+  lightIM.instanceMatrix.needsUpdate = darkIM.instanceMatrix.needsUpdate = true;
+  boardGroup.add(lightIM); boardGroup.add(darkIM);
 
-  // ---------- piece meshes ----------
-  const whiteMat = new THREE.MeshStandardMaterial({ color: hexInt(T.whiteArmy || '#efe4c8'), roughness: 0.55, metalness: 0.08 });
-  const blackMat = new THREE.MeshStandardMaterial({ color: hexInt(T.blackArmy || '#3a2418'), roughness: 0.5, metalness: 0.18 });
+  // ---------- piece meshes: polished ivory (white) vs dark rosewood (black) ----------
+  const whiteMat = new THREE.MeshPhysicalMaterial({ color: hexInt(T.whiteArmy || '#efe4c8'), roughness: 0.34, metalness: 0.0, clearcoat: 0.55, clearcoatRoughness: 0.3, envMapIntensity: 1.15, sheen: 0.2 });
+  const blackMat = new THREE.MeshPhysicalMaterial({ color: hexInt(T.blackArmy || '#3a2418'), roughness: 0.3, metalness: 0.05, clearcoat: 0.7, clearcoatRoughness: 0.22, envMapIntensity: 1.0 });
   const piecesGroup = new THREE.Group();
   boardGroup.add(piecesGroup);
   let meshBySquare = new Map();

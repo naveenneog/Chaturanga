@@ -109,23 +109,31 @@ def build_padati():
 
 def build_gaja():
     parts = []
-    parts.append(ball(0.5, (0, 0, 0.55), (1.35, 1.0, 0.92)))
-    parts.append(ball(0.34, (0, 0.5, 0.62), (1.0, 0.85, 0.95)))
-    trunk_pts = [(0, 0.72, 0.5), (0, 0.82, 0.34), (0, 0.86, 0.18), (0, 0.82, 0.05), (0, 0.72, -0.02), (0, 0.6, -0.02)]
+    # elongated body (front-back along +Y), not a round ball
+    parts.append(ball(0.42, (0, 0.02, 0.56), (1.18, 1.5, 0.82)))
+    # head at the front, slightly lower
+    parts.append(ball(0.30, (0, 0.62, 0.58), (1.05, 0.9, 0.98)))
+    parts.append(ball(0.20, (0, 0.78, 0.46), (1.0, 0.9, 0.95)))       # brow/forehead bulge
+    # curling trunk: shrinking overlapping balls, forward then down then tucking back
+    trunk_pts = [(0, 0.9, 0.5), (0, 1.0, 0.34), (0, 1.03, 0.18), (0, 0.99, 0.04), (0, 0.9, -0.05), (0, 0.78, -0.08)]
     for i, (x, y, z) in enumerate(trunk_pts):
-        parts.append(ball(0.16 - i * 0.017, (x, y, z)))
+        parts.append(ball(0.15 - i * 0.016, (x, y, z)))
+    # large flat ears angled off the head
     for s in (1, -1):
-        ear = ball(0.26, (s * 0.34, 0.44, 0.66), (0.18, 0.85, 1.0)); ear.rotation_euler = (0, math.radians(s * 18), 0); parts.append(ear)
+        ear = ball(0.30, (s * 0.34, 0.5, 0.62), (0.13, 0.95, 1.15)); ear.rotation_euler = (0, 0, math.radians(s * 22)); parts.append(ear)
+    # tusks pointing forward-and-down
     for s in (1, -1):
-        parts.append(cone(0.05, 0.0, 0.3, (s * 0.14, 0.66, 0.34), verts=12, rot=(math.radians(60), 0, 0)))
+        parts.append(cone(0.045, 0.0, 0.34, (s * 0.12, 0.82, 0.42), verts=12, rot=(math.radians(105), 0, 0)))
+    # four stout legs at the body corners
     for sx in (1, -1):
         for sy in (1, -1):
-            parts.append(cone(0.15, 0.13, 0.42, (sx * 0.3, sy * 0.26, 0.2)))
-    parts.append(box(0.62, 0.6, 0.1, (0, -0.12, 0.98)))
+            parts.append(cone(0.15, 0.13, 0.46, (sx * 0.3, sy * 0.34, 0.23)))
+    # howdah (seat) firmly on the back
+    parts.append(box(0.58, 0.62, 0.1, (0, -0.18, 0.96)))
     for sx in (1, -1):
         for sy in (1, -1):
-            parts.append(cone(0.028, 0.028, 0.26, (sx * 0.22, -0.12 + sy * 0.22, 1.14), verts=8))
-    parts.append(box(0.56, 0.54, 0.07, (0, -0.12, 1.28)))
+            parts.append(cone(0.026, 0.026, 0.26, (sx * 0.21, -0.18 + sy * 0.22, 1.12), verts=8))
+    parts.append(box(0.54, 0.56, 0.07, (0, -0.18, 1.26)))
     return finish(join(parts, "gaja"), subsurf=1, decimate=0.4)
 
 
