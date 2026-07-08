@@ -10,11 +10,46 @@
   teaches **moral values and life/battlefield lessons** (especially for the pawns).
 - **Owner:** @naveenneog (Naveen Gopalakrishna)
 - **Run:** `npm run serve` → http://localhost:5174/  ·  **Test:** `npm test` (node:test)
-- **Status:** v0.4 — playable 3D board, one world (Kurukshetra), teachings + read-aloud,
-  and **realistic figurine pieces** built with an **image-to-3D pipeline**: a themed
-  gpt-image-2 concept per piece → **Hunyuan3D-2 mesh (free HF Space, GPU)** → **Blender
-  concept-texture projection** → web GLB. (Local **TripoSR (CPU)** remains a no-signup
-  fallback.) Image-based lighting + generated board textures + Sora intro.
+- **Status:** v0.5 — playable 3D board with **two worlds** (Kurukshetra, Ramayana/Lanka), teachings
+  + read-aloud, **realistic Hunyuan3D-2 pieces**, AND a full **teach-and-play layer**: an AI
+  opponent with **5 levels** (alpha-beta engine in a Web Worker), a **coach** (best-move hints +
+  blunder review), an **openings trainer** (6 openings walked move-by-move), a **piece inspector**
+  (rotating 3D render + movement diagram on select), a **Warrior's Eye** piece-perspective camera,
+  a **lobby** (`setup.html`), portrait **Sora intros with music**, and a **native Android APK**
+  (Capacitor) — `npm run apk` → `Chaturanga-v1.0.0.apk` (debug-signed, ~33 MB).
+- **Pieces:** built with an **image-to-3D pipeline** — a themed gpt-image-2 concept per piece →
+  **Hunyuan3D-2 mesh (free HF Space, GPU)** → **Blender concept-texture projection** → web GLB.
+  (Local **TripoSR (CPU)** remains a no-signup fallback.) Image-based lighting + generated board
+  textures per world.
+
+---
+
+## Teach-and-play layer (v0.5)
+```
+web/js/engine.js        PURE: alpha-beta negamax + quiescence + MVV-LVA + piece-square eval over
+                        chess.js. LEVELS[5] (Padati..Mantri) scale depth + blunder rate + time cap.
+                        analyze()/bestMove()/classifyMove(). Root moves searched full-window so
+                        every move gets an EXACT score (needed for blunder detection).
+web/js/coach.js         PURE: hint() (best move + themed why), reviewMove() (silent on good moves,
+                        names the stronger move on mistakes/blunders), openingNote()/openingStep().
+web/js/openings.js      6 classic openings, each annotated move-by-move (detectOpening()).
+web/js/engine.worker.js Web Worker running the AI off the render thread (main-thread fallback).
+```
+- **URL params → board3d.js:** `mode` (ai|hotseat), `side` (w|b), `level` (1-5), `train` (opening id).
+  Lobby `setup.html` builds these. AI runs in the worker; after each human move the coach reviews it
+  and warns on blunders; the opening badge names the line.
+- **Piece inspector** (`#inspector`): a second small WebGL renderer shows the selected piece rotating
+  + a 5x5 CSS movement grid (gold=move, red=capture). **Warrior's Eye** (`#eyeBtn`): camera sits at
+  the selected piece's eye level looking down the board (`setEye`/`eyeTarget` in board3d).
+- **Openings trainer:** `play.html?train=<id>` → `runTrainer()` auto-walks the booked line move-by-
+  move with each note narrated, then hands control back.
+- **Mobile:** contact-shadow decals ground pieces when realtime shadows are off; render loop pauses
+  on `visibilitychange`; inspector DPR capped. **Android APK:** Capacitor 8, `capacitor.config.json`
+  (appId `com.naveenneog.chaturanga`, webDir `web`), `tooling/build_apk.ps1` (needs JDK 21 +
+  Android SDK). App icon/splash from `resources/` via `@capacitor/assets` (`tooling/gen_icon.py`).
+- **Tests:** `node --test` = 27 (rules + engine + coach/openings + all-worlds validation).
+  QA harnesses: `tooling/smoke.mjs` (AI game + inspector + hint + eye) and `tooling/smoke2.mjs`
+  (lobby + trainer + world2).
 
 ---
 
@@ -42,9 +77,9 @@ web/vendor/            chess.js (rules) + three.module.js + three.core.js + GLTF
 web/assets/models/     <piece>.glb — carved pieces exported from Blender (padati/gaja/ashva/ratha/mantri/raja)
 tooling/blender/model_pieces.py   headless Blender modeller: builds the 6 pieces + exports .glb (+ Cycles preview)
 tooling/gen_assets.py   gpt-image-2 (AAD): env + board-light/dark textures per world -> web/assets/<world>/*.jpg
-tooling/gen_intro.py    Sora-2 (AAD): cinematic intro per world -> web/assets/<world>/intro.mp4
+tooling/gen_intro.py    Sora-2 (AAD): portrait 720x1280 cinematic intro WITH MUSIC per world -> web/assets/<world>/intro.mp4
 scripts/serve.mjs      static server on :5174
-test/rules.test.js     9 unit tests (engine + identities + teachings + world validation)
+test/*.test.js         27 unit tests: rules + engine + coach/openings + all-worlds validation
 ```
 
 ## Realism + asset workflow (GPT-image-2 + Sora, AAD auth via `az login`)
