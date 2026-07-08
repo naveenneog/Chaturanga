@@ -10,9 +10,10 @@
   teaches **moral values and life/battlefield lessons** (especially for the pawns).
 - **Owner:** @naveenneog (Naveen Gopalakrishna)
 - **Run:** `npm run serve` → http://localhost:5174/  ·  **Test:** `npm test` (node:test)
-- **Status:** v0.3 — playable 3D board, one world (Kurukshetra), teachings + read-aloud,
-  **carved glTF pieces** (Blender), and a **realism pass**: image-based lighting + physical
-  materials + generated marble/rosewood board textures (gpt-image-2) + a **Sora cinematic intro**.
+- **Status:** v0.4 — playable 3D board, one world (Kurukshetra), teachings + read-aloud,
+  and **realistic figurine pieces** built with a **local image-to-3D pipeline**: a themed
+  gpt-image-2 concept per piece → **TripoSR (CPU)** mesh → **Blender concept-texture
+  projection** → web GLB. Image-based lighting + generated board textures + Sora intro.
 
 ---
 
@@ -57,7 +58,34 @@ test/rules.test.js     9 unit tests (engine + identities + teachings + world val
   board is two textured `InstancedMesh`es (light/dark) with the generated maps + max anisotropy; the
   flat board needs `shadow.normalBias ≈ 0.03` (else shadow-acne stripes).
 
-## 3D pieces (Blender pipeline)
+## 3D pieces — local image-to-3D pipeline (gpt-image-2 → TripoSR → Blender projection)
+The current realistic pieces are **not** hand-modelled; they are reconstructed from a themed
+concept image. Reproduce with the `.venv3d` (Python 3.11 via `uv`, torch CPU):
+1. **Concept (inspiration):** `python tooling/gen_refs.py [world]` → a museum-quality carved-ivory
+   figurine per piece on a neutral bg → `web/assets/<world>/refs/<key>.jpg` (+ `_contact.jpg`).
+   Art direction (subjects) is the `WORLDS` dict in the script.
+2. **Ivory bg:** `python tooling/ivory_bg.py [world]` (rembg) → `<key>.proj.jpg` (figurine on
+   ivory, so mesh areas outside the concept silhouette read as plain carved ivory, not grey).
+3. **Mesh:** `python tooling/triposr_run.py <img...> --out tooling/TripoSR/out256 --resolution 256`
+   → `<key>.glb` (dense, vertex-coloured). **TripoSR is patched** to use **PyMCubes** instead of
+   the native `torchmcubes` (see `tsr/models/isosurface.py`) — no compiler needed, CPU-only.
+4. **Project + web-ready:** `blender -b --python tooling/blender/texture_project.py -- <raw_glb>
+   <concept.proj.jpg> web/assets/models/<key>.glb <preview.png>` with env `ROTX=-135 CAM=+X`.
+   It orients/grounds the (consistently tilted) TripoSR output, decimates to ~28k tris, and
+   projects the concept from an ortho front camera as the surface texture. Renders 3 QA angles.
+- **Orientation:** TripoSR's canonical frame is a **fixed ~45° tilt** for every piece → the SAME
+  `ROTX=-135` uprights all; the concept's side view is along **+X** → `CAM=+X`. Do transforms via
+  `mesh.data.transform(Matrix)` — **object-level `transform_apply` silently no-ops in --background**.
+- **Renderer:** `board3d.js pieceFor(key,color)` keeps the baked concept texture for the ivory
+  (white) army and multiplies `material.color` toward **rosewood** (`0x4a3120`) for the dark army.
+- **QA on board:** `node tooling/shot.mjs <prefix> [world]` (Playwright, swiftshader — slow ~3 min).
+- Diagnostics/tools: `tooling/blender/inspect_glb.py` (3 framed views) and `axis_views.py`
+  (±X/±Y/top, to read a mesh's native orientation). Research notes: `tooling/3d_pipeline_research.md`.
+- **Known limits (iterate):** TripoSR is soft/melty on thin parts (horse mane, elephant trunk,
+  chhatra parasol); the projection is one-sided (back is mirrored/plain ivory). Options: higher
+  `--resolution`, per-piece `CAM`, or a stronger local engine (Hunyuan3D-2mini) later.
+
+## 3D pieces (legacy hand-modelled Blender pipeline — fallback)
 - **Model:** `blender --background --python tooling/blender/model_pieces.py` (Blender 5.1 at
   `C:\Program Files\Blender Foundation\Blender 5.1\blender.exe`). Controlled primitives + an
   extruded silhouette (Ashva horse-head) + `SOLIDIFY`/`SUBSURF`/`BEVEL`/`DECIMATE`. Metaballs were
