@@ -161,6 +161,21 @@ async function main() {
   boardGroup.add(piecesGroup);
   let meshBySquare = new Map();
 
+  // Contact-shadow decals ground the pieces when realtime shadows are disabled (mobile).
+  const shadowGroup = new THREE.Group();
+  boardGroup.add(shadowGroup);
+  function makeShadowTex() {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+    const g = cv.getContext('2d');
+    const grd = g.createRadialGradient(64, 64, 3, 64, 64, 60);
+    grd.addColorStop(0, 'rgba(0,0,0,0.55)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
+    const t = new THREE.CanvasTexture(cv); return t;
+  }
+  const CONTACT = !renderer.shadowMap.enabled;
+  const shadowMat = CONTACT ? new THREE.MeshBasicMaterial({ map: makeShadowTex(), transparent: true, depthWrite: false }) : null;
+  const shadowGeo = new THREE.PlaneGeometry(0.92, 0.92);
+
   // ---------- carved glTF models (Blender) with a procedural fallback ----------
   const MODELS = {};
   const TARGET_H = { padati: 0.72, gaja: 0.86, ashva: 0.94, ratha: 0.8, mantri: 1.0, raja: 1.14 };
@@ -220,6 +235,7 @@ async function main() {
 
   function syncPieces() {
     piecesGroup.clear();
+    shadowGroup.clear();
     meshBySquare = new Map();
     const b = game.board();
     for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
@@ -234,6 +250,7 @@ async function main() {
       g.userData.square = cell.square;
       piecesGroup.add(g);
       meshBySquare.set(cell.square, g);
+      if (shadowMat) { const s = new THREE.Mesh(shadowGeo, shadowMat); s.rotation.x = -Math.PI / 2; s.position.set(p.x, 0.044, p.z); shadowGroup.add(s); }
     }
   }
   await loadModels();
@@ -524,7 +541,7 @@ async function main() {
     const canvas = document.getElementById('inspCanvas');
     if (!canvas) return null;
     const r = new THREE.WebGLRenderer({ canvas, antialias: !MOBILE, alpha: true });
-    r.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    r.setPixelRatio(Math.min(devicePixelRatio || 1, MOBILE ? 1.25 : 2));
     const w = canvas.clientWidth || 150, h = canvas.clientHeight || 168;
     r.setSize(w, h, false);
     const sc = new THREE.Scene();
@@ -613,14 +630,17 @@ async function main() {
   updateStatus();
   if (TRAIN) runTrainer(TRAIN);
   else if (vsAI && game.turn() !== HUMAN) aiMove();     // AI opens when the human plays black
-  renderer.setAnimationLoop(() => {
+  function loop() {
     updateCamera();
     const t = performance.now() * 0.001;
     selRing.material.opacity = 0.55 + Math.sin(t * 4) * 0.25;
     selRing.rotation.z = t * 0.6;
     renderer.render(scene, camera);
     if (insp && $('#inspector')?.classList.contains('show')) { insp.holder.rotation.y = t * 0.9; insp.r.render(insp.sc, insp.cm); }
-  });
+  }
+  renderer.setAnimationLoop(loop);
+  // pause rendering when the app is backgrounded (saves battery on mobile)
+  document.addEventListener('visibilitychange', () => renderer.setAnimationLoop(document.hidden ? null : loop));
 
   window.__cReady = true;
   window.__c = {
