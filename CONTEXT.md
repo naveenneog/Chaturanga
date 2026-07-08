@@ -11,9 +11,10 @@
 - **Owner:** @naveenneog (Naveen Gopalakrishna)
 - **Run:** `npm run serve` → http://localhost:5174/  ·  **Test:** `npm test` (node:test)
 - **Status:** v0.4 — playable 3D board, one world (Kurukshetra), teachings + read-aloud,
-  and **realistic figurine pieces** built with a **local image-to-3D pipeline**: a themed
-  gpt-image-2 concept per piece → **TripoSR (CPU)** mesh → **Blender concept-texture
-  projection** → web GLB. Image-based lighting + generated board textures + Sora intro.
+  and **realistic figurine pieces** built with an **image-to-3D pipeline**: a themed
+  gpt-image-2 concept per piece → **Hunyuan3D-2 mesh (free HF Space, GPU)** → **Blender
+  concept-texture projection** → web GLB. (Local **TripoSR (CPU)** remains a no-signup
+  fallback.) Image-based lighting + generated board textures + Sora intro.
 
 ---
 
@@ -58,35 +59,44 @@ test/rules.test.js     9 unit tests (engine + identities + teachings + world val
   board is two textured `InstancedMesh`es (light/dark) with the generated maps + max anisotropy; the
   flat board needs `shadow.normalBias ≈ 0.03` (else shadow-acne stripes).
 
-## 3D pieces — local image-to-3D pipeline (gpt-image-2 → TripoSR → Blender projection)
+## 3D pieces — image-to-3D pipeline (gpt-image-2 → Hunyuan3D-2 → Blender projection)
 The current realistic pieces are **not** hand-modelled; they are reconstructed from a themed
-concept image. Reproduce with the `.venv3d` (Python 3.11 via `uv`, torch CPU):
+concept image. The live pieces are built with **Hunyuan3D-2** (below); **TripoSR** is a
+no-signup CPU fallback. Reproduce with the `.venv3d` (Python 3.11 via `uv`, torch CPU):
 1. **Concept (inspiration):** `python tooling/gen_refs.py [world]` → a museum-quality carved-ivory
    figurine per piece on a neutral bg → `web/assets/<world>/refs/<key>.jpg` (+ `_contact.jpg`).
    Art direction (subjects) is the `WORLDS` dict in the script.
 2. **Ivory bg:** `python tooling/ivory_bg.py [world]` (rembg) → `<key>.proj.jpg` (figurine on
    ivory, so mesh areas outside the concept silhouette read as plain carved ivory, not grey).
-3. **Mesh:** `python tooling/triposr_run.py <img...> --out tooling/TripoSR/out256 --resolution 256`
-   → `<key>.glb` (dense, vertex-coloured). **TripoSR is patched** to use **PyMCubes** instead of
-   the native `torchmcubes` (see `tsr/models/isosurface.py`) — no compiler needed, CPU-only.
+3. **Mesh (primary — Hunyuan3D-2, free HF Space):** `python tooling/hf_batch.py [keys...]`
+   (reuses one `gradio_client` connection; anon, ZeroGPU, ~11s/piece) → `tooling/hunyuan_out/
+   <key>_hunyuan.glb` (dense, ~4–10 MB, **far crisper** than TripoSR — clean manes, trunks,
+   chariot wheels, riders). Single piece: `python tooling/hf_hunyuan.py <img> <out.glb> [shape|all]`.
+   Optional free `HF_TOKEN` env if anon rate-limits (didn't in practice). *Fallback (local, CPU):*
+   `python tooling/triposr_run.py <img...> --out tooling/TripoSR/out256 --resolution 256` (TripoSR
+   patched to **PyMCubes** in `tsr/models/isosurface.py` — no compiler/CUDA, but soft/melty).
 4. **Project + web-ready:** `blender -b --python tooling/blender/texture_project.py -- <raw_glb>
-   <concept.proj.jpg> web/assets/models/<key>.glb <preview.png>` with env `ROTX=-135 CAM=+X`.
-   It orients/grounds the (consistently tilted) TripoSR output, decimates to ~28k tris, and
-   projects the concept from an ortho front camera as the surface texture. Renders 3 QA angles.
-- **Orientation:** TripoSR's canonical frame is a **fixed ~45° tilt** for every piece → the SAME
-  `ROTX=-135` uprights all; the concept's side view is along **+X** → `CAM=+X`. Do transforms via
-  `mesh.data.transform(Matrix)` — **object-level `transform_apply` silently no-ops in --background**.
+   <concept.proj.jpg> web/assets/models/<key>.glb <preview.png>`. For **Hunyuan** use env
+   `ROTX=0 CAM=+Y` (its native frame is already upright, up=+Z, side profile along Y). *(TripoSR
+   needs `ROTX=-135 CAM=+X`.)* It orients/grounds, auto-corrects residual body-lean (vertical-mass
+   axis → +Z), decimates to ~28k tris, and projects the concept from an ortho front camera as the
+   surface texture. Renders 3 QA angles.
+- **Orientation:** **Hunyuan3D-2** outputs a consistent upright frame (up=+Z, concept view along
+  +Y) → `ROTX=0 CAM=+Y`. TripoSR's frame is a fixed ~45° tilt → `ROTX=-135 CAM=+X`. Either way a
+  per-piece body-lean refine finishes the upright. Do transforms via `mesh.data.transform(Matrix)`
+  — **object-level `transform_apply` silently no-ops in --background**.
 - **Renderer:** `board3d.js pieceFor(key,color)` keeps the baked concept texture for the ivory
   (white) army and multiplies `material.color` toward **rosewood** (`0x4a3120`) for the dark army.
 - **QA on board:** `node tooling/shot.mjs <prefix> [world]` (Playwright, swiftshader — slow ~3 min).
-- Diagnostics/tools: `tooling/blender/inspect_glb.py` (3 framed views) and `axis_views.py`
-  (±X/±Y/top, to read a mesh's native orientation). Research notes: `tooling/3d_pipeline_research.md`.
-- **Known limits (iterate):** TripoSR is soft/melty on thin parts (horse mane, elephant trunk,
-  chhatra parasol); the projection is front/back only. **Tested & ruled out locally:** res 400
-  is only marginally cleaner than 256 (softness is inherent), and **Hunyuan3D-2mini is NOT
-  CPU-feasible** (stalled >16 min at ~13 GB RAM, no output — needs a GPU). Best remaining levers:
-  a cleaner concept **pose** (solid silhouette), per-piece `CAM`, or a cloud image-to-3D key
-  (Meshy/Rodin free tier) for crisper geometry.
+- Diagnostics/tools: `tooling/blender/inspect_glb.py` (3 framed views), `axis_views.py`
+  (±X/±Y/top, to read a mesh's native orientation), `compare_render.py` (side-by-side two GLBs).
+  Research notes: `tooling/3d_pipeline_research.md`.
+- **Engine comparison (done):** Hunyuan3D-2 (free HF Space) beats local TripoSR decisively —
+  reconstructs riders, tails, chariot wheels, elephant howdahs that TripoSR melts into blobs. The
+  cloud image-to-3D options with paid APIs (Meshy/Rodin) and Azure (no first-party image-to-3D)
+  were dead-ends; the **free HF Space is the recommended engine**. TripoSR stays as the offline
+  fallback (soft on thin parts; res 400 only marginally cleaner than 256; Hunyuan3D-2**mini** is
+  NOT CPU-feasible — needs the hosted GPU Space).
 
 ## 3D pieces (legacy hand-modelled Blender pipeline — fallback)
 - **Model:** `blender --background --python tooling/blender/model_pieces.py` (Blender 5.1 at

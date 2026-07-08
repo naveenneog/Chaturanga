@@ -17,3 +17,7 @@ tooling/TripoSR/examples/
 tooling/Hunyuan3D-2/
 tooling/hunyuan_out/
 web/assets/kurukshetra/refs/*.proj.jpg
+
+tooling/.rodin_key
+*.key
+tooling/.meshy_key
