@@ -2,6 +2,7 @@
 // authentic Chaturanga piece identities + per-world moral teachings that are
 // revealed and read aloud on select / capture / promotion. Local hotseat.
 import * as THREE from '../vendor/three.module.js';
+import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { newGame, TYPE_TO_KEY, selectMoment, moveMoment } from './rules.js';
 import { makePiece } from './pieces3d.js';
 
@@ -107,6 +108,47 @@ async function main() {
   boardGroup.add(piecesGroup);
   let meshBySquare = new Map();
 
+  // ---------- carved glTF models (Blender) with a procedural fallback ----------
+  const MODELS = {};
+  const TARGET_H = { padati: 0.72, gaja: 0.86, ashva: 0.94, ratha: 0.8, mantri: 1.0, raja: 1.14 };
+  const loader = new GLTFLoader();
+  const loadGLB = (url) => new Promise((res, rej) => loader.load(url, res, undefined, rej));
+  function normalize(obj, targetH) {
+    let box = new THREE.Box3().setFromObject(obj);
+    const size = new THREE.Vector3(); box.getSize(size);
+    const s = targetH / (size.y || 1);
+    obj.scale.setScalar(s);
+    obj.updateMatrixWorld(true);
+    box = new THREE.Box3().setFromObject(obj);
+    const c = new THREE.Vector3(); box.getCenter(c);
+    obj.position.set(-c.x, -box.min.y, -c.z);
+  }
+  async function loadModels() {
+    await Promise.all(Object.keys(TARGET_H).map(async (k) => {
+      try {
+        const gltf = await loadGLB(`assets/models/${k}.glb`);
+        normalize(gltf.scene, TARGET_H[k]);
+        const t = new THREE.Group(); t.add(gltf.scene);
+        MODELS[k] = t;
+      } catch { /* keep procedural fallback */ }
+    }));
+  }
+  // pieces with a clear front (muzzle / spear) point at +X in their model
+  const facingY = (key, color) => {
+    const w = color === 'w';
+    if (key === 'ashva' || key === 'padati') return w ? Math.PI / 2 : -Math.PI / 2;
+    if (key === 'gaja') return w ? 0 : Math.PI;
+    return w ? 0 : Math.PI;
+  };
+  function pieceFor(key, mat) {
+    const t = MODELS[key];
+    if (!t) return makePiece(key, mat);
+    const g = t.clone(true);
+    g.traverse((n) => { if (n.isMesh) { n.material = mat; n.castShadow = true; } });
+    g.userData.key = key;
+    return g;
+  }
+
   function syncPieces() {
     piecesGroup.clear();
     meshBySquare = new Map();
@@ -116,15 +158,16 @@ async function main() {
       if (!cell) continue;
       const row = 7 - r, col = c; // r0 = rank8
       const key2 = TYPE_TO_KEY[cell.type];
-      const g = makePiece(key2, cell.color === 'w' ? whiteMat : blackMat);
+      const g = pieceFor(key2, cell.color === 'w' ? whiteMat : blackMat);
       const p = posOf(col, row);
       g.position.set(p.x, 0, p.z);
-      if (g.userData.facing) g.rotation.y = cell.color === 'w' ? Math.PI / 2 : -Math.PI / 2;
+      g.rotation.y = facingY(key2, cell.color);
       g.userData.square = cell.square;
       piecesGroup.add(g);
       meshBySquare.set(cell.square, g);
     }
   }
+  await loadModels();
   syncPieces();
 
   // ---------- selection + move markers ----------
