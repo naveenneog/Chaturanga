@@ -48,6 +48,24 @@ WORLDS = {
             "no border, no shadows."
         ),
     },
+    "ramayana": {
+        "env": (
+            "A wide 360-degree equirectangular panorama of a moonlit ocean causeway leading to golden "
+            "Lanka at night: cool silver-blue moonlight on calm water, distant torch-lit golden palace "
+            "spires, faint sea mist, deep teal shadows with warm gold highlights. Soft, even, "
+            "photographic, high dynamic range feel. No people, no text, no watermark."
+        ),
+        "light": (
+            "A seamless tileable top-down texture of pale moonlit sea-stone marble with faint blue-grey "
+            "veining and a cool pearly sheen, even studio lighting, photorealistic, no seams, no text, "
+            "no border, no shadows."
+        ),
+        "dark": (
+            "A seamless tileable top-down texture of dark teal-slate stone with deep blue-green grain "
+            "and a soft polished sheen, even studio lighting, photorealistic, no seams, no text, "
+            "no border, no shadows."
+        ),
+    },
 }
 
 _tok = {"v": None, "t": 0.0}

@@ -6,7 +6,8 @@ import { GLTFLoader } from '../vendor/GLTFLoader.js';
 import { newGame, TYPE_TO_KEY, selectMoment, moveMoment } from './rules.js';
 import { makePiece } from './pieces3d.js';
 import { bestMove as bestMoveMain, LEVELS, levelById } from './engine.js';
-import { hint as hintMain, reviewMove as reviewMain, openingNote } from './coach.js';
+import { hint as hintMain, reviewMove as reviewMain, openingNote, openingStep } from './coach.js';
+import { openingById } from './openings.js';
 
 const $ = (s) => document.querySelector(s);
 const FILES = 'abcdefgh';
@@ -26,7 +27,7 @@ function cellFromXZ(x, z) {
   return (col >= 0 && col < 8 && row >= 0 && row < 8) ? { col, row, square: squareName(col, row) } : null;
 }
 
-const WORLDS = [['kurukshetra', 'Kurukshetra']];
+const WORLDS = [['kurukshetra', 'Kurukshetra'], ['ramayana', 'Ramayana · Lanka']];
 
 async function main() {
   const params = new URLSearchParams(location.search);
@@ -40,8 +41,11 @@ async function main() {
   const MODE = params.get('mode') === 'hotseat' ? 'hotseat' : 'ai';
   const HUMAN = params.get('side') === 'b' ? 'b' : 'w';   // human's army in AI mode
   const LEVEL = levelById(+(params.get('level') || 3));
+  const TRAIN = (params.get('train') || '').replace(/[^a-z]/gi, '');   // openings trainer id
   const vsAI = MODE === 'ai';
+  let training = false;
   const isHumanTurn = () => MODE === 'hotseat' || game.turn() === HUMAN;
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   const game = newGame();
 
@@ -298,6 +302,30 @@ async function main() {
     // coach: review a HUMAN move (only in AI mode, and not on game-ending moves)
     if (vsAI && !opt.ai && !game.isGameOver()) reviewHuman(fenBefore, mv);
     // AI reply
+    if (vsAI && !training && !game.isGameOver() && game.turn() !== HUMAN) aiMove();
+  }
+
+  // Openings trainer: walk a booked line move-by-move with its teaching, then hand over.
+  async function runTrainer(id) {
+    const opening = openingById(id);
+    if (!opening) return;
+    training = true;
+    const badge = $('#opening'); if (badge) { badge.textContent = `${opening.name} — ${opening.sub}`; badge.classList.add('show'); }
+    await wait(700);
+    let ply = 0, step;
+    while ((step = openingStep(id, ply))) {
+      const mv = game.moves({ verbose: true }).find((m) => m.san === step.san);
+      if (!mv) break;
+      showCoach({ tone: 'nudge', title: `${opening.name} · ${ply + 1}/${step.total}`, message: step.note });
+      speak(step.note);
+      await wait(1700);
+      await doMove(mv.from, mv.to, { ai: true });
+      await wait(1500);
+      ply++;
+    }
+    training = false;
+    showCoach({ tone: 'nudge', title: 'Your move', message: `That is the ${opening.name}. ${opening.idea} Now play on and apply it.` });
+    speak(`That is the ${opening.name}. Now play on.`);
     if (vsAI && !game.isGameOver() && game.turn() !== HUMAN) aiMove();
   }
 
@@ -335,7 +363,7 @@ async function main() {
     return cellFromXZ(hit.x, hit.z);
   }
   function onTap(cell) {
-    if (busy || aiThinking || !cell || game.isGameOver()) return;
+    if (busy || aiThinking || training || !cell || game.isGameOver()) return;
     if (vsAI && !isHumanTurn()) return;               // wait your turn against the AI
     const piece = game.get(cell.square);
     if (selected) {
@@ -583,7 +611,8 @@ async function main() {
   document.querySelectorAll('nav a').forEach((a) => { a.href = `${a.getAttribute('href').split('?')[0]}?world=${worldFile}`; });
 
   updateStatus();
-  if (vsAI && game.turn() !== HUMAN) aiMove();          // AI opens when the human plays black
+  if (TRAIN) runTrainer(TRAIN);
+  else if (vsAI && game.turn() !== HUMAN) aiMove();     // AI opens when the human plays black
   renderer.setAnimationLoop(() => {
     updateCamera();
     const t = performance.now() * 0.001;
