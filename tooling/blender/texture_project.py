@@ -94,36 +94,44 @@ def clean_decimate(o):
         only(o); bpy.ops.object.modifier_apply(modifier='d')
 
 
-def make_front_camera(o):
+def make_axis_cameras(o):
     mn, mx = bbox(o)
     ctr = (mn + mx) / 2
     size = mx - mn
-    axis = {"-Y": Vector((0, -1, 0)), "+Y": Vector((0, 1, 0)),
-            "-X": Vector((-1, 0, 0)), "+X": Vector((1, 0, 0))}[CAM]
     dist = max(size) * 3 + 3
-    cam = bpy.data.cameras.new("front"); cam.type = 'ORTHO'
-    # fit the taller dimension (height) so proportions match the concept
-    cam.ortho_scale = max(size.z, size.x, size.y) * 1.02
-    cam.sensor_fit = 'VERTICAL'
-    co = bpy.data.objects.new("front", cam); bpy.context.scene.collection.objects.link(co)
-    co.location = ctr + axis * dist
-    co.rotation_mode = 'QUATERNION'
-    co.rotation_quaternion = (ctr - co.location).to_track_quat('-Z', 'Y')
-    return co, ctr, size
+    scale = max(size.z, size.x, size.y) * 1.02
+    fwd = {"+X": Vector((1, 0, 0)), "-X": Vector((-1, 0, 0)),
+           "+Y": Vector((0, 1, 0)), "-Y": Vector((0, -1, 0))}[CAM]
+    cams = {}
+    for sign in (1, -1):
+        cam = bpy.data.cameras.new("c"); cam.type = 'ORTHO'
+        cam.ortho_scale = scale; cam.sensor_fit = 'VERTICAL'
+        co = bpy.data.objects.new("c", cam); bpy.context.scene.collection.objects.link(co)
+        co.location = ctr + fwd * sign * dist
+        co.rotation_mode = 'QUATERNION'
+        co.rotation_quaternion = (ctr - co.location).to_track_quat('-Z', 'Z')
+        cams[sign] = co
+    return cams, ctr, size, fwd
 
 
-def project_uvs(o, cam):
+def project_uvs(o, cams, fwd):
     scene = bpy.context.scene
     scene.render.resolution_x = int(1000 * ASPECT); scene.render.resolution_y = 1000
     me = o.data
     uvl = me.uv_layers.new(name="proj")
-    depsgraph = bpy.context.evaluated_depsgraph_get()
-    coords = {}
+    # per-vertex projection from each of the two opposing cameras
+    proj = {1: {}, -1: {}}
     for v in me.vertices:
-        cc = world_to_camera_view(scene, cam, o.matrix_world @ v.co)
-        coords[v.index] = (cc.x, cc.y)
-    for loop in me.loops:
-        uvl.data[loop.index].uv = coords[loop.vertex_index]
+        wco = o.matrix_world @ v.co
+        for sign, cam in cams.items():
+            cc = world_to_camera_view(scene, cam, wco)
+            proj[sign][v.index] = (cc.x, cc.y)
+    # each face samples the camera it faces most head-on (two-sided, no grey backs)
+    for poly in me.polygons:
+        sign = 1 if poly.normal.dot(fwd) >= 0 else -1
+        table = proj[sign]
+        for li in poly.loop_indices:
+            uvl.data[li].uv = table[me.loops[li].vertex_index]
 
 
 def assign_concept_material(o):
@@ -134,7 +142,8 @@ def assign_concept_material(o):
     out = nt.nodes.new("ShaderNodeOutputMaterial"); out.location = (500, 0)
     bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled"); bsdf.location = (200, 0)
     bsdf.inputs["Roughness"].default_value = 0.5
-    tex = nt.nodes.new("ShaderNodeTexImage"); tex.location = (-150, 0); tex.image = img
+    tex = nt.nodes.new("ShaderNodeTexImage"); tex.location = (-150, 0)
+    tex.image = img; tex.extension = 'EXTEND'  # clamp -> ivory edge, never repeat
     uv = nt.nodes.new("ShaderNodeUVMap"); uv.location = (-380, 0); uv.uv_map = "proj"
     nt.links.new(uv.outputs["UV"], tex.inputs["Vector"])
     nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
@@ -165,12 +174,24 @@ def render_preview(o):
 
 def export(o):
     only(o)
+    # JPEG-compress the embedded texture -> much smaller GLB for the web/mobile
+    common = dict(filepath=OUT, export_format='GLB', use_selection=True, export_yup=True)
     try:
-        bpy.ops.export_scene.gltf(filepath=OUT, export_format='GLB', use_selection=True,
-                                  export_yup=True, export_image_format='AUTO')
+        bpy.ops.export_scene.gltf(export_image_format='JPEG', export_jpeg_quality=85, **common)
     except TypeError:
-        bpy.ops.export_scene.gltf(filepath=OUT, export_format='GLB', use_selection=True,
-                                  export_yup=True)
+        try:
+            bpy.ops.export_scene.gltf(export_image_format='JPEG', **common)
+        except TypeError:
+            bpy.ops.export_scene.gltf(**common)
+
+
+def downscale_concept(max_px=1024):
+    """Cap the projected texture size before export (Blender-side, no PIL)."""
+    for img in bpy.data.images:
+        if img.source == 'FILE' and max(img.size) > max_px and img.size[0] and img.size[1]:
+            w, h = img.size
+            s = max_px / max(w, h)
+            img.scale(int(w * s), int(h * s))
 
 
 def main():
@@ -178,9 +199,10 @@ def main():
     o = import_join()
     orient_ground(o)
     clean_decimate(o)
-    cam, ctr, size = make_front_camera(o)
-    project_uvs(o, cam)
+    cams, ctr, size, fwd = make_axis_cameras(o)
+    project_uvs(o, cams, fwd)
     assign_concept_material(o)
+    downscale_concept(1024)
     export(o)
     render_preview(o)
     print("PROJECTED", OUT, "faces", len(o.data.polygons))

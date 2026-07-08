@@ -10,7 +10,10 @@ tooling/__pycache__/
 *.pyc
 # local 3D pipeline (heavy; reproducible from scripts)
 .venv3d/
+.venvhy/
 tooling/TripoSR/.git/
 tooling/TripoSR/out*/
 tooling/TripoSR/examples/
+tooling/Hunyuan3D-2/
+tooling/hunyuan_out/
 web/assets/kurukshetra/refs/*.proj.jpg

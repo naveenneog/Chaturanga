@@ -70,10 +70,10 @@ async function main() {
   key.position.set(5, 11, 6);
   if (!MOBILE) {
     key.castShadow = true;
-    key.shadow.mapSize.set(2048, 2048);
-    const d = 6.5; Object.assign(key.shadow.camera, { left: -d, right: d, top: d, bottom: -d, near: 1, far: 30 });
-    key.shadow.bias = -0.0002;
-    key.shadow.normalBias = 0.03;
+    key.shadow.mapSize.set(4096, 4096);
+    const d = 6.0; Object.assign(key.shadow.camera, { left: -d, right: d, top: d, bottom: -d, near: 1, far: 30 });
+    key.shadow.bias = -0.00015;
+    key.shadow.normalBias = 0.035;
   }
   scene.add(key);
   scene.add(new THREE.AmbientLight(hexInt(T.panel || '#241308'), 0.55));
@@ -195,7 +195,7 @@ async function main() {
       const key2 = TYPE_TO_KEY[cell.type];
       const g = pieceFor(key2, cell.color);
       const p = posOf(col, row);
-      g.position.set(p.x, 0, p.z);
+      g.position.set(p.x, 0.041, p.z); // rest base ON the board top (squares top = 0.04) to avoid z-fighting
       g.rotation.y = facingY(key2, cell.color);
       g.userData.square = cell.square;
       piecesGroup.add(g);
@@ -430,6 +430,7 @@ async function main() {
     card: () => ({ shown: $('#card').classList.contains('show'), kind: $('#cKind').textContent, name: $('#cName').textContent, text: $('#cMeaning').textContent }),
     info: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles }),
     view: () => PRESETS[presetIdx].name,
+    cam: (o) => { camTween = null; Object.assign(cam, o || {}); return { r: cam.radius, theta: cam.theta, phi: cam.phi }; },
   };
 }
 

@@ -37,10 +37,10 @@ async function shot(name) {
 }
 await shot('start');
 
-// orbit a bit via the debug hook if present, else just re-shoot
+// orbit lower + closer (match the user's zoomed view) via the debug hook if present
 try {
-  await page.evaluate(() => { if (window.__c && window.__c.view) window.__c.view({ theta: Math.PI / 2, phi: 1.05, r: 12 }); });
-  await page.waitForTimeout(1200); await shot('near');
+  await page.evaluate(() => { if (window.__c && window.__c.cam) window.__c.cam({ radius: 7.4, theta: Math.PI / 2, phi: 1.28 }); });
+  await page.waitForTimeout(1500); await shot('near');
 } catch {}
 
 console.log('CONSOLE_ERRORS', errors.length);
