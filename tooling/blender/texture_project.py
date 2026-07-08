@@ -63,19 +63,41 @@ def bbox(o):
     return mn, mx
 
 
-def orient_ground(o):
-    mn0, mx0 = bbox(o)
-    print("DBG ROT(deg)=", [round(math.degrees(r), 1) for r in ROT], "CAM=", CAM,
-          "z_before=", round(mn0.z, 2), round(mx0.z, 2))
-    # rotate + ground by transforming mesh DATA directly (operators no-op headless)
-    o.data.transform(Euler(ROT, 'XYZ').to_matrix().to_4x4())
-    o.data.update()
+def _center_ground(o):
     vs = [v.co for v in o.data.vertices]
     minx = min(v.x for v in vs); maxx = max(v.x for v in vs)
     miny = min(v.y for v in vs); maxy = max(v.y for v in vs)
     minz = min(v.z for v in vs)
     o.data.transform(Matrix.Translation((-(minx + maxx) / 2, -(miny + maxy) / 2, -minz)))
     o.data.update()
+
+
+def orient_ground(o):
+    import numpy as np
+    mn0, mx0 = bbox(o)
+    print("DBG ROT(deg)=", [round(math.degrees(r), 1) for r in ROT], "CAM=", CAM,
+          "z_before=", round(mn0.z, 2), round(mx0.z, 2))
+    # 1) coarse pre-orient with the known TripoSR-frame tilt (gets the base roughly down)
+    o.data.transform(Euler(ROT, 'XYZ').to_matrix().to_4x4())
+    o.data.update()
+    _center_ground(o)
+    # 2) refine: make the figure stand straight by aligning its vertical mass axis
+    #    (centroid of the top half minus the bottom half) to +Z. Robust to a leaning body
+    #    and to wide/short shapes (elephant) since we split by height.
+    V = np.array([v.co[:] for v in o.data.vertices], dtype=np.float64)
+    zmid = 0.5 * (V[:, 2].min() + V[:, 2].max())
+    low = V[V[:, 2] < zmid]; high = V[V[:, 2] >= zmid]
+    if len(low) >= 30 and len(high) >= 30:
+        up = high.mean(0) - low.mean(0)
+        up = up / (np.linalg.norm(up) or 1.0)
+        zaxis = np.array([0.0, 0.0, 1.0])
+        axis = np.cross(up, zaxis); nlen = np.linalg.norm(axis)
+        ang = math.acos(max(-1.0, min(1.0, float(np.dot(up, zaxis)))))
+        print("DBG body lean(deg)=", round(math.degrees(ang), 1), "up=", [round(x, 2) for x in up])
+        if nlen > 1e-6 and ang > math.radians(0.5):
+            o.data.transform(Matrix.Rotation(ang, 4, Vector(axis / nlen)))
+            o.data.update()
+    _center_ground(o)
     mn1, mx1 = bbox(o)
     print("DBG z_after=", round(mn1.z, 2), round(mx1.z, 2),
           "y_after=", round(mn1.y, 2), round(mx1.y, 2))
