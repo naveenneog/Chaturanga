@@ -159,11 +159,27 @@ async function main() {
     if (key === 'gaja') return w ? 0 : Math.PI;
     return w ? 0 : Math.PI;
   };
-  function pieceFor(key, mat) {
+  // ivory (white army) shows the baked concept texture as-is; dark army multiplies
+  // it toward rosewood so the carved detail survives as dark wood.
+  const IVORY = new THREE.Color(0xffffff);
+  const ROSEWOOD = new THREE.Color(0x4a3120);
+  function pieceFor(key, color) {
     const t = MODELS[key];
-    if (!t) return makePiece(key, mat);
+    if (!t) return makePiece(key, color === 'w' ? whiteMat : blackMat);
     const g = t.clone(true);
-    g.traverse((n) => { if (n.isMesh) { n.material = mat; n.castShadow = true; } });
+    const tint = color === 'w' ? IVORY : ROSEWOOD;
+    g.traverse((n) => {
+      if (!n.isMesh) return;
+      n.castShadow = true;
+      if (n.material && n.material.map) {
+        const m = n.material.clone();
+        m.color = tint.clone();
+        m.roughness = 0.5; m.metalness = 0.0; m.envMapIntensity = 1.0;
+        n.material = m;
+      } else {
+        n.material = color === 'w' ? whiteMat : blackMat;
+      }
+    });
     g.userData.key = key;
     return g;
   }
@@ -177,7 +193,7 @@ async function main() {
       if (!cell) continue;
       const row = 7 - r, col = c; // r0 = rank8
       const key2 = TYPE_TO_KEY[cell.type];
-      const g = pieceFor(key2, cell.color === 'w' ? whiteMat : blackMat);
+      const g = pieceFor(key2, cell.color);
       const p = posOf(col, row);
       g.position.set(p.x, 0, p.z);
       g.rotation.y = facingY(key2, cell.color);

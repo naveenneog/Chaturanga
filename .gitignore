@@ -8,3 +8,9 @@ android/
 tooling/_*
 tooling/__pycache__/
 *.pyc
+# local 3D pipeline (heavy; reproducible from scripts)
+.venv3d/
+tooling/TripoSR/.git/
+tooling/TripoSR/out*/
+tooling/TripoSR/examples/
+web/assets/kurukshetra/refs/*.proj.jpg
