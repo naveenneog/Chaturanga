@@ -12,14 +12,20 @@
 - **Published:** public repo **github.com/naveenneog/Chaturanga** · playable at
   **naveenneog.github.io/Chaturanga** (GitHub Pages from `docs/`) · release **v1.0.0** with
   **Chaturanga-v1.0.0.apk** (debug-signed). Build the APK with `npm run apk`.
-- **Run:** `npm run serve` → http://localhost:5174/  ·  **Test:** `npm test` (node:test)
-- **Status:** v0.5 — playable 3D board with **two worlds** (Kurukshetra, Ramayana/Lanka), teachings
-  + read-aloud, **realistic Hunyuan3D-2 pieces**, AND a full **teach-and-play layer**: an AI
-  opponent with **5 levels** (alpha-beta engine in a Web Worker), a **coach** (best-move hints +
-  blunder review), an **openings trainer** (6 openings walked move-by-move), a **piece inspector**
-  (rotating 3D render + movement diagram on select), a **Warrior's Eye** piece-perspective camera,
-  a **lobby** (`setup.html`), portrait **Sora intros with music**, and a **native Android APK**
-  (Capacitor) — `npm run apk` → `Chaturanga-v1.0.0.apk` (debug-signed, ~33 MB).
+- **Run:** `npm run serve` → http://localhost:5174/  ·  **Test:** `npm test` (node:test, 36 tests)
+- **Status:** v1.0 — playable in **3D (Three.js) AND 2D** with **four worlds**, each with **two
+  DISTINCT per-side armies** (white/black have their own identities, names, models & teachings):
+  **Kurukshetra** (Pandavas vs Kauravas), **Ramayana** (Rama's vanaras vs Ravana's rakshasas),
+  **Kalinga** (Ashoka's Mauryas vs Kalinga), **Devasura** (Devas vs Asuras). Teachings +
+  **read-aloud** (pre-generated **DragonHD Indian-English** narration, per side), **realistic
+  Hunyuan3D-2 pieces**, a **piece-style system** (per-world themed materials + 5 cyclable presets;
+  Devas glow), AND a full **teach-and-play layer**: an AI opponent with **5 levels** (alpha-beta
+  engine in a Web Worker), a **coach** (best-move hints + blunder review), an **openings trainer**
+  (6 openings walked move-by-move), a **piece inspector** (rotating 3D render + movement diagram on
+  select), a **Warrior's Eye** piece-perspective camera, a **procedural audio** engine (Indian
+  classical drone + raga + SFX), a **lobby** (`setup.html`: world/mode/side/level/**render 3D|2D**),
+  portrait **Sora intros with music**, and a **native Android APK** (Capacitor) —
+  `npm run apk` → `Chaturanga-v1.0.0.apk` (debug-signed, ~97 MB, 4 worlds bundled).
 - **Pieces:** built with an **image-to-3D pipeline** — a themed gpt-image-2 concept per piece →
   **Hunyuan3D-2 mesh (free HF Space, GPU)** → **Blender concept-texture projection** → web GLB.
   (Local **TripoSR (CPU)** remains a no-signup fallback.) Image-based lighting + generated board
@@ -50,9 +56,9 @@ web/js/engine.worker.js Web Worker running the AI off the render thread (main-th
   on `visibilitychange`; inspector DPR capped. **Android APK:** Capacitor 8, `capacitor.config.json`
   (appId `com.naveenneog.chaturanga`, webDir `web`), `tooling/build_apk.ps1` (needs JDK 21 +
   Android SDK). App icon/splash from `resources/` via `@capacitor/assets` (`tooling/gen_icon.py`).
-- **Tests:** `node --test` = 27 (rules + engine + coach/openings + all-worlds validation).
-  QA harnesses: `tooling/smoke.mjs` (AI game + inspector + hint + eye) and `tooling/smoke2.mjs`
-  (lobby + trainer + world2).
+- **Tests:** `node --test` = 36 (rules + engine + coach/openings + all-worlds validation +
+  per-side identities). QA harnesses: `tooling/smoke.mjs` (AI game + inspector + hint + eye),
+  `tooling/smoke2.mjs` (lobby + trainer + worlds) and `tooling/smoke_ux.mjs` (UX regressions).
 
 ---
 
@@ -65,24 +71,37 @@ web/js/engine.worker.js Web Worker running the AI off the render thread (main-th
 - **Pawns realistic, per world, in 3D.** Realistic 3D pieces; may use **Blender via MCP** later
   for higher-fidelity models. v0.1 ships procedural (LatheGeometry) pieces.
 - **Teachings are revealed + read aloud** on select (a piece's dharma), capture (a battlefield
-  lesson), pawn advance (a life lesson) and promotion (the growth payoff). Narration currently
-  uses the browser `speechSynthesis`; pre-generated Azure TTS clips can replace it later.
+  lesson), pawn advance (a life lesson) and promotion (the growth payoff). Narration uses
+  **pre-generated Azure DragonHD Indian-English clips** (`assets/<world>/voice/*.mp3`, keyed by the
+  exact teaching string, **per side**) with a `speechSynthesis` fallback.
+- **Two distinct armies per world.** White and black are NOT mirror images: each side has its own
+  piece identities, pawn teachings, capture/check/checkmate lines AND (for ramayana/kalinga/devasura)
+  its own 3D **models_dark** sculpts. See `rules.js sidePieces(world,color)` + `world.piecesDark`.
 - **Local hotseat**, static hosting, no backend (like Sopana).
 
 ## Architecture (data → rules → renderer)
 ```
-web/worlds/<id>.json   the world: theme + pieces{raja,mantri,ratha,gaja,ashva,padati} + pawnTeachings[]
-web/js/rules.js        PURE: chess.js wrapper. TYPE_TO_KEY identities, selectMoment/moveMoment, validateWorld
+web/worlds/<id>.json   the world: theme + pieces{...} + pawnTeachings[] + (per-side) piecesDark{...},
+                       pawnTeachingsDark[], captureLinesDark, check/checkmate*Dark, pieceStyle{white,black}
+web/js/rules.js        PURE: chess.js wrapper + PER-SIDE identity logic. sidePieces(world,color),
+                       color-aware selectMoment/moveMoment/pieceInfo/pawnTeaching, validateWorld
 web/js/pieces3d.js     procedural 3D pieces (LatheGeometry) — FALLBACK if a glTF model is missing
-web/js/board3d.js      renderer: scene, InstancedMesh squares, tap-to-move, teaching card + speak(), camera fit
-web/play.html          the game shell (HUD, teaching card, turn pills). Has an import map: "three" -> vendor
-web/vendor/            chess.js (rules) + three.module.js + three.core.js + GLTFLoader.js (+BufferGeometryUtils/SkeletonUtils)
-web/assets/models/     <piece>.glb — carved pieces exported from Blender (padati/gaja/ashva/ratha/mantri/raja)
-tooling/blender/model_pieces.py   headless Blender modeller: builds the 6 pieces + exports .glb (+ Cycles preview)
-tooling/gen_assets.py   gpt-image-2 (AAD): env + board-light/dark textures per world -> web/assets/<world>/*.jpg
-tooling/gen_intro.py    Sora-2 (AAD): portrait 720x1280 cinematic intro WITH MUSIC per world -> web/assets/<world>/intro.mp4
+web/js/board3d.js      3D renderer: scene, InstancedMesh squares, tap-to-move, teaching card + voice,
+                       per-side MODELS.w/.b, piece-style presets (styleFor/STYLE_PRESETS), inspector,
+                       Warrior's Eye, coach/openings, camera fit
+web/js/board2d.js      2D renderer (canvas/DOM) reusing rules/engine/coach/audio/openings — same game,
+                       themed glyph pieces, teaching panel, coach, undo, captured tray
+web/js/audio.js        procedural Web Audio: tanpura drone + raga melody + move/capture/check SFX
+web/play.html          the 3D shell (HUD, teaching card, More menu: 🎨 Style, music/sound/voice)
+web/play2d.html        the 2D shell (same HUD/menus)
+web/setup.html         lobby: world + mode(ai|hotseat) + side + level + render(3D|2D) + openings launcher
+web/vendor/            chess.js + three.module.js + three.core.js + GLTFLoader.js (+utils)
+web/assets/<world>/models/       <piece>.glb — white army carved pieces (Hunyuan3D-2)
+web/assets/<world>/models_dark/  <piece>.glb — black army (distinct sculpts; ramayana/kalinga/devasura)
+web/assets/<world>/voice/        voice.json + <hash>.mp3 — DragonHD narration (per side)
+tooling/gen_refs|gen_assets|gen_intro|gen_voice.py   asset pipelines (all 4 worlds' art direction)
 scripts/serve.mjs      static server on :5174
-test/*.test.js         27 unit tests: rules + engine + coach/openings + all-worlds validation
+test/*.test.js         36 unit tests: rules + engine + coach/openings + worlds + per-side identities
 ```
 
 ## Realism + asset workflow (GPT-image-2 + Sora, AAD auth via `az login`)
@@ -167,10 +186,22 @@ no-signup CPU fallback. Reproduce with the `.venv3d` (Python 3.11 via `uv`, torc
   error/stall, so QA never hangs; the video plays fine on real browsers/devices.
 - Generated textures/panoramas: save as **JPG** (gpt-image PNGs are ~1–2 MB each; JPG ~150–380 KB).
 
+## Piece styles + per-side voice (v1.0)
+- **Piece-style system** (`board3d.js` `pieceFor`→`styleFor(color)`): a style = {tint, roughness,
+  metalness, emissive, emissiveIntensity, envMapIntensity, clearcoat}. Each world may set
+  `pieceStyle.{white,black}` (kalinga=bronze/iron, devasura=radiant-gold-GLOW/dark-cosmic); the
+  **🎨 Style** button (More menu) cycles **5 presets** (persisted `localStorage 'chaturanga_style'`).
+- **Per-side voice:** `tooling/gen_voice.py <world>` reads every teaching string for BOTH sides and
+  synthesises DragonHD clips → `assets/<world>/voice/voice.json` (map: teaching→mp3). Voices:
+  `en-IN-Arjun:DragonHDLatestNeural` (sage) + `en-IN-Neerja:DragonHDLatestNeural`. **Azure Speech
+  gotcha:** header `Authorization: aad#<RESOURCE_ID>#<AAD-token>` (NO "Bearer"); `pitch="0%"` not
+  `"0st"` (400). DragonHD honors prosody, ignores express-as styles.
+
 ## Backlog / next
-- More worlds: **Chaturanga Classic** (historical lore), **Life & Karma** (modern work/life lessons)
-  — each needs its own `env/board-light/board-dark` (gen_assets) + `intro` (gen_intro) + teachings.
-- **Refine the Blender pieces** further (Gaja detail; per-world piece skins/materials).
-- A **lobby** (`setup.html`): pick world + sides + piece set.
-- **Azure TTS** narration per world (replace `speechSynthesis`); per-world **music** + branding/logo.
-- Optional: promotion chooser, move history, simple AI opponent, publish (GitHub Pages + APK via Capacitor).
+- More worlds (e.g. **Chaturanga Classic**, **Life & Karma**) — each needs `gen_refs`→`hf_batch`→
+  Blender projection for both armies + `gen_assets`/`gen_intro`/`gen_voice` + a `<id>.json`.
+- **2D piece sprites:** the 2D renderer currently uses themed glyphs, not the carved concept art —
+  could render the `refs/*.jpg` or a flattened model shot per side.
+- **Shrink the ~97 MB APK:** exclude dev-only `assets/*/refs/*.jpg` + `assets/*_dark/refs/` concept
+  images from the web→android/docs sync (they aren't used at runtime).
+- More piece styles / per-world music tracks / branding.
