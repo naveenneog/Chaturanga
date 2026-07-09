@@ -139,8 +139,10 @@ async function main() {
   function select(square) {
     const piece = game.get(square);
     clearMarkers();
-    if (!showMoves(square)) return;
+    showMoves(square);               // draw move dots if any (a no-move piece still shows its dharma)
     audio.sfx('select');
+    squares[square]?.classList.add('selsq');
+    pieceEls.get(square)?.classList.add('sel');
     const info = selectMoment(world, piece.type, piece.color);
     showPanel(info, piece.type, piece.color);
     speak(info.teaching);
