@@ -38,6 +38,26 @@ PROMPTS = {
         "flutes and a conch — swells with courage and longing. Framed vertically for a phone screen, "
         "shallow depth of field, volumetric light. No text, no words, no watermark."
     ),
+    "kalinga": (
+        "Vertical cinematic slow tilt-down over an ancient Indian battlefield beside a still river at "
+        "solemn dusk — the war of Kalinga. A vast carved stone chessboard rests on the plain; on it "
+        "stand two armies of carved ivory and dark iron-stone figures: imperial Mauryan war-elephants, "
+        "chariots, an emperor, and defiant coastal defenders. Muted ochre and grey light, drifting "
+        "smoke and dust, a river faintly tinged red. A grave, sorrowful score — a low mournful bansuri "
+        "flute, a slow deep drum and a distant conch — that softens toward peace and reflection. "
+        "Framed vertically for a phone screen, shallow depth of field, volumetric light, slow reverent "
+        "camera move. No text, no words, no watermark."
+    ),
+    "devasura": (
+        "Vertical cinematic push-in through a radiant cosmic realm — the churning of the ocean of milk, "
+        "the war of gods and demons. A luminous carved chessboard floats amid swirling golden and pearl "
+        "light and deep cosmic indigo; on it stand two armies of glowing ivory-gold celestial figures "
+        "and dark cosmic-bronze demon figures: a radiant many-tusked white elephant, a divine horse, "
+        "celestial chariots, a crowned thunderbolt-king, and mighty asura lords. Brilliant divine light, "
+        "star-flecked nebular mist. An epic, dramatic score swells — thunderous drums, soaring strings, "
+        "a droning tanpura and a triumphant conch, cosmic and grand. Framed vertically for a phone "
+        "screen, shallow depth of field, volumetric light. No text, no words, no watermark."
+    ),
 }
 
 _tok = {"v": None, "t": 0.0}

@@ -66,6 +66,44 @@ WORLDS = {
             "no border, no shadows."
         ),
     },
+    "kalinga": {
+        "env": (
+            "A wide 360-degree equirectangular panorama of an ancient Indian battlefield beside the Daya "
+            "river at solemn dusk after the Kalinga war: muted earth and iron tones, weathered sandstone "
+            "ruins, a still river faintly tinged red in the fading light, drifting dust and smoke, a "
+            "grave and sorrowful mood in ochre, grey and deep umber. Soft, even, photographic, high "
+            "dynamic range feel. No people, no text, no watermark."
+        ),
+        "light": (
+            "A seamless tileable top-down texture of pale weathered sandstone with soft warm beige grain "
+            "and a faint matte sheen, even studio lighting, photorealistic, no seams, no text, no "
+            "border, no shadows."
+        ),
+        "dark": (
+            "A seamless tileable top-down texture of dark iron-grey stone with a faint reddish patina in "
+            "the grain and a soft worn sheen, even studio lighting, photorealistic, no seams, no text, "
+            "no border, no shadows."
+        ),
+    },
+    "devasura": {
+        "env": (
+            "A wide 360-degree equirectangular panorama of a radiant cosmic realm — the churning of the "
+            "milk-ocean of the gods: swirling golden and pearl light amid deep cosmic indigo and violet, "
+            "distant luminous celestial spires, drifting star-flecked nebular mist, brilliant divine "
+            "highlights against a jewelled night. Soft, even, photographic, high dynamic range feel. "
+            "No people, no text, no watermark."
+        ),
+        "light": (
+            "A seamless tileable top-down texture of luminous pearl-white marble with faint gold veining "
+            "and a soft radiant sheen, even studio lighting, photorealistic, no seams, no text, no "
+            "border, no shadows."
+        ),
+        "dark": (
+            "A seamless tileable top-down texture of deep cosmic indigo-violet stone flecked with faint "
+            "gold stars and a soft polished sheen, even studio lighting, photorealistic, no seams, no "
+            "text, no border, no shadows."
+        ),
+    },
 }
 
 _tok = {"v": None, "t": 0.0}

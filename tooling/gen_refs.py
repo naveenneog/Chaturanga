@@ -149,6 +149,133 @@ WORLDS = {
             "spiked golden war-armour, standing sovereign and terrible — the heart of the demon host."
         ),
     },
+    "kalinga": {
+        "padati": (
+            "A disciplined Mauryan imperial foot-soldier of Emperor Ashoka's army (3rd century BCE): "
+            "a bare-chested warrior in a knee-length dhoti and a plumed helmet, a tall rectangular "
+            "shield on one arm and a straight spear in the other, standing at rigid disciplined attention."
+        ),
+        "ashva": (
+            "A Mauryan imperial war-horse (Ashva) rearing on its hind legs, powerful arched neck, "
+            "braided mane and tail, an imperial saddle-cloth with the Mauryan lion emblem, bridle and "
+            "bells — proud and martial."
+        ),
+        "gaja": (
+            "A grand Mauryan imperial war-elephant (Gaja) standing four-square, long tusks capped with "
+            "metal, a jewelled imperial face-plate and rich drapes, a large ornate armoured howdah with "
+            "a canopy on its back — the might of the Mauryan empire."
+        ),
+        "ratha": (
+            "A Mauryan imperial war-chariot (Ratha): an ornate curved chariot car on two large spoked "
+            "wheels drawn by a pair of stylised horses, a tall imperial pennant with a lion crest and a "
+            "great bow across the car — disciplined and grand."
+        ),
+        "mantri": (
+            "A wise Mauryan royal counsellor (Mantri) evoking the minister Radhagupta: a dignified robed "
+            "elder statesman with a neat beard and a scroll, one hand raised in calm counsel — the "
+            "shrewd adviser of the empire."
+        ),
+        "raja": (
+            "Emperor Ashoka the Great as a Mauryan raja: a crowned imperial emperor in rich robes and "
+            "jewellery, a ceremonial sword sheathed, a grave far-seeing expression — a conqueror on the "
+            "verge of renouncing war for dharma."
+        ),
+    },
+    "kalinga_dark": {
+        "padati": (
+            "A fierce Kalinga defender foot-soldier (3rd century BCE, ancient Odisha): a bare-chested "
+            "coastal-kingdom warrior in a patterned wrap and a conical helmet, a round hide shield and a "
+            "broad-bladed spear, standing defiant to defend his homeland."
+        ),
+        "ashva": (
+            "A spirited Kalinga war-horse (Ashva) rearing up, arched neck, wild mane, a woven coastal "
+            "saddle-cloth with sea-wave patterns, bridle and shells — fierce and free."
+        ),
+        "gaja": (
+            "A powerful Kalinga war-elephant (Gaja) standing four-square, long tusks, a painted "
+            "coastal-styled face-plate and shell-and-wave drapes, a sturdy armoured howdah with a canopy "
+            "— the pride of Kalinga."
+        ),
+        "ratha": (
+            "A Kalinga war-chariot (Ratha): an ornate curved chariot car on two spoked wheels drawn by a "
+            "pair of horses, a fluttering pennant with a coastal sun-and-wave emblem and a great bow — "
+            "proud and defiant."
+        ),
+        "mantri": (
+            "A resolute Kalinga general-counsellor (Mantri): a strong robed commander with a coastal "
+            "diadem, one hand on a sheathed sword, the other raised in rallying command — the defiant "
+            "war-leader of Kalinga."
+        ),
+        "raja": (
+            "The King of Kalinga as a raja: a crowned proud defender-king in coastal royal robes and "
+            "shell jewellery, a raised sceptre-mace, standing unbowed before a mightier empire — "
+            "the heart of Kalinga's resistance."
+        ),
+    },
+    "devasura": {
+        "padati": (
+            "A radiant Deva (celestial god) foot-soldier of Indra's host: a luminous divine warrior in "
+            "glowing golden armour with a serene ageless face, a jewelled spear and a small sun-disc "
+            "shield, a soft halo of light — heavenly and resolute."
+        ),
+        "ashva": (
+            "Uchchaihshravas, the divine seven-headed white horse of the gods risen from the churning "
+            "ocean: a magnificent luminous celestial horse rearing, flowing radiant mane and tail, "
+            "golden divine harness with gems — dazzling and swift."
+        ),
+        "gaja": (
+            "Airavata, Indra's magnificent divine white war-elephant with multiple tusks: an immense "
+            "luminous elephant standing four-square, jewelled celestial face-plate and gold drapes, a "
+            "radiant ornate howdah with a canopy on its back — glorious and vast."
+        ),
+        "ratha": (
+            "A golden celestial deva war-chariot (Ratha): a resplendent glowing chariot car on two "
+            "radiant spoked wheels drawn by luminous divine horses, a tall pennant with a sun emblem "
+            "and a shining bow — heavenly and grand."
+        ),
+        "mantri": (
+            "Brihaspati, the divine guru of the gods (Mantri): a serene luminous sage with a topknot, "
+            "flowing robes and a soft halo, holding a rosary and a scripture, one hand raised in wise "
+            "blessing — the celestial counsellor."
+        ),
+        "raja": (
+            "Indra, king of the gods (Devaraja): a resplendent crowned celestial emperor holding the "
+            "vajra thunderbolt, in radiant golden divine armour and jewellery, a serene commanding face "
+            "and a halo of light — the sovereign of the heavens."
+        ),
+    },
+    "devasura_dark": {
+        "padati": (
+            "A mighty Asura (demon-god) foot-soldier of the churning war: a powerful dark-hued asura "
+            "warrior in ornate blackened bronze armour with a proud fierce face, gripping a heavy "
+            "spiked mace and a dark shield — formidable and defiant."
+        ),
+        "ashva": (
+            "A fearsome Asura war-steed of the demon host: a powerful dark celestial horse-beast rearing "
+            "with burning eyes, a wild smoky mane, blackened bronze harness with dark gems — savage and "
+            "unstoppable."
+        ),
+        "gaja": (
+            "A colossal Asura war-elephant of the demon host: an immense dark-hued armoured elephant "
+            "standing four-square, long tusks, a fierce blackened face-plate and dark jewelled drapes, a "
+            "spiked ornate howdah with a canopy — terrible and mighty."
+        ),
+        "ratha": (
+            "A dark Asura war-chariot (Ratha): a menacing ornate chariot car on two spiked spoked wheels "
+            "drawn by a pair of dark demon-steeds, a tall black pennant with an eclipse emblem and a "
+            "great bow — proud and ominous."
+        ),
+        "mantri": (
+            "Shukracharya, the guru of the asuras (Mantri) who knew the secret of reviving the fallen: a "
+            "commanding dark-robed sage with a fierce wise face and a topknot, holding a staff and a "
+            "sacred text, one hand raised — the brilliant counsellor of the demons."
+        ),
+        "raja": (
+            "The Asura king Bali as a raja: a mighty crowned demon-emperor of great might and strange "
+            "nobility, in magnificent blackened-gold war-armour and jewellery, a raised sceptre, a proud "
+            "commanding face — sovereign of the asura host."
+        ),
+    },
 }
 
 ORDER = ["padati", "ashva", "gaja", "ratha", "mantri", "raja"]
