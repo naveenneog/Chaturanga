@@ -37,26 +37,29 @@ if (Test-Path "$root\resources\logo.png") {
   npx --yes @capacitor/assets generate --assetPath resources --android
 }
 
-# Set the app version
+# Set the app version (write BOM-free; a UTF-8 BOM breaks Groovy parsing of build.gradle)
 $gradle = "$root\android\app\build.gradle"
-(Get-Content $gradle -Raw) -replace 'versionName "[^"]*"', "versionName ""$Version""" | Set-Content $gradle -Encoding utf8
-
+function Write-NoBom([string]$path, [string]$text) {
+  [System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding($false)))
+}
+$g = (Get-Content $gradle -Raw) -replace "^\uFEFF", ''
+$g = $g -replace 'versionName "[^"]*"', "versionName ""$Version"""
 # Ensure the release build is signed with the debug key (idempotent)
-$g = Get-Content $gradle -Raw
 if ($g -notmatch "signingConfig signingConfigs.getByName\('debug'\)") {
   $g = $g -replace "(release\s*\{)", "`$1`r`n            signingConfig signingConfigs.getByName('debug')"
-  Set-Content $gradle $g -Encoding utf8
   Write-Host "patched release signingConfig -> debug key"
 }
+Write-NoBom (Resolve-Path $gradle).Path $g
 
 # local.properties (SDK location)
 $lp = "$root\android\local.properties"
 if (!(Test-Path $lp)) { "sdk.dir=$($env:ANDROID_HOME -replace '\\','\\')" | Out-File -Encoding ascii $lp }
 
-# Build
+# Build (fail loudly instead of shipping a stale APK)
 Push-Location "$root\android"
-try { & .\gradlew.bat --no-daemon assembleRelease }
+try { & .\gradlew.bat --no-daemon assembleRelease; $code = $LASTEXITCODE }
 finally { Pop-Location }
+if ($code -ne 0) { throw "gradle assembleRelease failed (exit $code) — not copying a stale APK" }
 
 # Collect the APK
 $apk = Get-ChildItem "$root\android\app\build\outputs\apk\release\*.apk" | Select-Object -First 1

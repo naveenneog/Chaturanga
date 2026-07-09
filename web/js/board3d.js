@@ -272,9 +272,24 @@ async function main() {
   );
   selRing.rotation.x = Math.PI / 2; selRing.visible = false; selRing.position.y = 0.06;
   boardGroup.add(selRing);
+  // red ring on the checked king (ux-05)
+  const checkRing = new THREE.Mesh(
+    new THREE.TorusGeometry(0.45, 0.055, 12, 36),
+    new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0.9 }),
+  );
+  checkRing.rotation.x = Math.PI / 2; checkRing.visible = false; checkRing.position.y = 0.065;
+  boardGroup.add(checkRing);
+  function updateCheck() {
+    if (!game.inCheck()) { checkRing.visible = false; return; }
+    const b = game.board(), turn = game.turn();
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      const cell = b[r][c];
+      if (cell && cell.type === 'k' && cell.color === turn) { const p = cellFromName(cell.square); checkRing.position.set(p.x, 0.065, p.z); checkRing.visible = true; }
+    }
+  }
 
   let selected = null; // {square, moves:[verbose]}
-  function clearMarkers() { markers.clear(); selRing.visible = false; selected = null; }
+  function clearMarkers() { markers.clear(); selRing.visible = false; selected = null; $('#inspector')?.classList.remove('show'); }
   function showMoves(square) {
     const moves = game.moves({ square, verbose: true });
     if (!moves.length) return false;
@@ -298,7 +313,7 @@ async function main() {
   let busy = false, aiThinking = false;
   async function doMove(from, to, opt = {}) {
     const fenBefore = game.fen();
-    const mv = game.move({ from, to, promotion: 'q' });
+    const mv = game.move({ from, to, promotion: opt.promotion || 'q' });
     if (!mv) return;
     busy = true;
     clearMarkers();
@@ -318,38 +333,51 @@ async function main() {
       });
     }
     syncPieces(); // reconcile castling / en-passant / promotion
+    updateCheck(); updateCaptured(); updateUndo();
+    if (MODE === 'hotseat' && autoFlip) { flip = game.turn() === 'b'; applyPreset(PRESETS[presetIdx]); }
     const state = { check: game.inCheck(), checkmate: game.isCheckmate() };
     reveal(moveMoment(world, mv, state));
     updateStatus();
     showOpening();
     busy = false;
-    // coach: review a HUMAN move (only in AI mode, and not on game-ending moves)
-    if (vsAI && !opt.ai && !game.isGameOver()) reviewHuman(fenBefore, mv);
+    if (game.isGameOver()) { showGameOver(); return; }
+    // coach: review a HUMAN move (only in AI mode)
+    if (vsAI && !opt.ai) reviewHuman(fenBefore, mv);
     // AI reply
-    if (vsAI && !training && !game.isGameOver() && game.turn() !== HUMAN) aiMove();
+    if (vsAI && !training && game.turn() !== HUMAN) aiMove();
   }
 
   // Openings trainer: walk a booked line move-by-move with its teaching, then hand over.
+  let autoFlip = false, trainerPaused = false, trainerExit = false;
+  async function pausableWait(ms) {
+    const end = performance.now() + ms;
+    while (performance.now() < end || trainerPaused) { if (trainerExit) throw 'exit'; await wait(120); }
+  }
   async function runTrainer(id) {
     const opening = openingById(id);
     if (!opening) return;
-    training = true;
+    training = true; trainerPaused = false; trainerExit = false;
+    $('#trainer')?.classList.add('show');
     const badge = $('#opening'); if (badge) { badge.textContent = `${opening.name} — ${opening.sub}`; badge.classList.add('show'); }
-    await wait(700);
-    let ply = 0, step;
-    while ((step = openingStep(id, ply))) {
-      const mv = game.moves({ verbose: true }).find((m) => m.san === step.san);
-      if (!mv) break;
-      showCoach({ tone: 'nudge', title: `${opening.name} · ${ply + 1}/${step.total}`, message: step.note });
-      speak(step.note);
-      await wait(1700);
-      await doMove(mv.from, mv.to, { ai: true });
-      await wait(1500);
-      ply++;
-    }
+    try {
+      await pausableWait(700);
+      let ply = 0, step;
+      while ((step = openingStep(id, ply))) {
+        const mv = game.moves({ verbose: true }).find((m) => m.san === step.san);
+        if (!mv) break;
+        const st = $('#trStep'); if (st) st.textContent = `${opening.name} · ${ply + 1}/${step.total}`;
+        showCoach({ tone: 'nudge', title: `${opening.name} · ${ply + 1}/${step.total}`, message: step.note });
+        speak(step.note);
+        await pausableWait(1800);
+        await doMove(mv.from, mv.to, { ai: true });
+        await pausableWait(1500);
+        ply++;
+      }
+      showCoach({ tone: 'nudge', title: 'Your move', message: `That is the ${opening.name}. ${opening.idea} Now play on and apply it.` });
+      speak(`That is the ${opening.name}. Now play on.`);
+    } catch { showCoach({ tone: 'nudge', title: 'Trainer ended', message: 'Play on from here — apply what you learned.' }); }
     training = false;
-    showCoach({ tone: 'nudge', title: 'Your move', message: `That is the ${opening.name}. ${opening.idea} Now play on and apply it.` });
-    speak(`That is the ${opening.name}. Now play on.`);
+    $('#trainer')?.classList.remove('show');
     if (vsAI && !game.isGameOver() && game.turn() !== HUMAN) aiMove();
   }
 
@@ -369,6 +397,54 @@ async function main() {
       const r = await think('review', { fen: fenBefore, move: { from: mv.from, to: mv.to, promotion: mv.promotion } });
       if (r && r.tone === 'warn') showCoach(r);
     } catch { /* ignore */ }
+  }
+
+  // captured-pieces tray (ux-04): derive from move history
+  function updateCaptured() {
+    const capB = [], capW = []; // capB: white-army pieces lost; capW: black-army pieces lost
+    for (const m of game.history({ verbose: true })) {
+      if (!m.captured) continue;
+      const glyph = (world.pieces[TYPE_TO_KEY[m.captured]] || {}).glyph || '•';
+      (m.color === 'w' ? capW : capB).push(glyph);
+    }
+    const w = $('#capW'), b = $('#capB');
+    if (w) w.innerHTML = capW.map((g) => `<span style="color:${T.muted || '#b79b74'}">${g}</span>`).join('');
+    if (b) b.innerHTML = capB.map((g) => `<span style="color:${T.whiteArmy || '#efe4c8'}">${g}</span>`).join('');
+  }
+  function updateUndo() { const u = $('#undoBtn'); if (u) u.disabled = game.history().length === 0 || training; }
+  function undo() {
+    if (busy || aiThinking || training || !game.history().length) return;
+    game.undo();
+    if (vsAI && game.turn() !== HUMAN && game.history().length) game.undo(); // also pop the AI reply
+    syncPieces(); clearMarkers(); updateCheck(); updateCaptured(); updateUndo();
+    if (MODE === 'hotseat' && autoFlip) { flip = game.turn() === 'b'; applyPreset(PRESETS[presetIdx]); }
+    updateStatus(); showOpening();
+    $('#card')?.classList.remove('show'); $('#coach')?.classList.remove('show'); $('#over')?.classList.remove('show');
+  }
+
+  // promotion picker (ux-06)
+  function askPromotion(from, to) {
+    const modal = $('#promo'), row = $('#promoRow'); if (!modal || !row) { doMove(from, to, { promotion: 'q' }); return; }
+    const opts = [['q', 'mantri'], ['r', 'ratha'], ['b', 'gaja'], ['n', 'ashva']];
+    row.innerHTML = opts.map(([p, k]) => `<button data-p="${p}">${(world.pieces[k] || {}).glyph || ''}<small>${(world.pieces[k] || {}).name || k}</small></button>`).join('');
+    modal.classList.add('show');
+    row.querySelectorAll('button').forEach((btn) => btn.onclick = () => { modal.classList.remove('show'); doMove(from, to, { promotion: btn.dataset.p }); });
+  }
+
+  // game-over modal (ux-16)
+  function showGameOver() {
+    const over = $('#over'); if (!over) return;
+    let kind = 'Draw', title = 'A draw', line = 'A hard-fought balance — neither Raja falls today.';
+    if (game.isCheckmate()) {
+      const winner = sideName(game.turn() === 'w' ? 'b' : 'w');
+      kind = 'Victory'; title = `${world.checkmateTitle || 'Victory'} — ${winner} win`; line = world.checkmateLine || '';
+    } else if (game.isStalemate()) { kind = 'Stalemate'; title = 'Stalemate'; line = 'No legal move remains, yet the Raja stands — the game is drawn.'; }
+    else if (game.isDraw()) { kind = 'Draw'; title = 'A draw'; line = 'The field is balanced — a draw by repetition or insufficient force.'; }
+    $('#overKind').textContent = kind;
+    $('#overTitle').textContent = title;
+    $('#overLine').textContent = line;
+    over.classList.add('show');
+    if (line) speak(line);
   }
   function fadeOut(g) {
     g.traverse((n) => { if (n.material) { n.material = n.material.clone(); n.material.transparent = true; } });
@@ -392,7 +468,12 @@ async function main() {
     const piece = game.get(cell.square);
     if (selected) {
       const legal = selected.moves.find((m) => m.to === cell.square);
-      if (legal) { doMove(selected.square, cell.square); return; }
+      if (legal) {
+        const from = selected.square, to = cell.square;
+        if (legal.promotion) { askPromotion(from, to); }   // let the player choose (ux-06)
+        else doMove(from, to);
+        return;
+      }
       if (piece && piece.color === game.turn()) { clearMarkers(); select(cell.square); return; }
       clearMarkers(); return;
     }
@@ -410,6 +491,7 @@ async function main() {
   let cardTimer = null;
   function reveal(m, quiet) {
     if (!m) return;
+    $('#coach')?.classList.remove('show');   // don't stack the coach + teaching card (ux-01)
     const kindLabel = { select: 'Dharma', pawn: 'The Foot-soldier', capture: 'Battlefield', promotion: 'Reborn', check: 'Peril', checkmate: 'Victory', move: 'Dharma' }[m.kind] || 'Dharma';
     $('#cKind').textContent = kindLabel;
     $('#cKind').className = 'kind ' + m.kind;
@@ -458,6 +540,7 @@ async function main() {
   let coachTimer = null;
   function showCoach(r) {
     const c = $('#coach'); if (!c) return;
+    $('#card')?.classList.remove('show');   // don't stack the teaching card + coach (ux-01)
     c.className = 'coach show ' + (r.tone || '');
     c.innerHTML = `<b>${r.title}.</b> ${r.message}`;
     clearTimeout(coachTimer); coachTimer = setTimeout(() => c.classList.remove('show'), 6500);
@@ -490,12 +573,15 @@ async function main() {
   const fitRadius = (base) => {
     const vHalf = (camera.fov * Math.PI) / 360;
     const hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);
-    return Math.max(base, BOARD_R / Math.sin(Math.min(vHalf, hHalf)));
+    const portrait = camera.aspect < 0.85;
+    const need = (BOARD_R / Math.sin(Math.min(vHalf, hHalf))) * (portrait ? 0.9 : 1); // fill more on phones (ux-09)
+    return Math.max(base * (portrait ? 0.82 : 1), need);
   };
   // steeper, fuller view on tall/portrait phones so the board isn't a shallow band
-  const presetPhi = (p) => (camera.aspect < 0.85 && p.name === 'Sitting' ? 0.52 : p.phi);
+  const presetPhi = (p) => (camera.aspect < 0.85 && p.name === 'Sitting' ? 0.48 : p.phi);
   function applyPreset(p, instant) {
     cam.baseRadius = p.radius;
+    cam.t.y = camera.aspect < 0.85 ? 0.5 : 0;          // lift the board up on portrait (ux-09)
     const theta = p.theta + (flip ? Math.PI : 0);
     const ph = presetPhi(p);
     if (instant) { cam.radius = fitRadius(p.radius); cam.theta = theta; cam.phi = ph; }
@@ -611,30 +697,49 @@ async function main() {
   // ---------- HUD ----------
   const sel = $('#worldSel');
   sel.innerHTML = WORLDS.map(([id, n]) => `<option value="${id}"${id === worldFile ? ' selected' : ''}>${n}</option>`).join('');
-  sel.addEventListener('change', () => { location.search = `?world=${sel.value}`; });
-  $('#newBtn').addEventListener('click', () => {
-    game.reset(); syncPieces(); clearMarkers();
-    $('#card').classList.remove('show');
-    $('#coach')?.classList.remove('show'); $('#opening')?.classList.remove('show'); $('#inspector')?.classList.remove('show');
-    eyeTarget = null; updateStatus();
-    if (vsAI && game.turn() !== HUMAN) aiMove();
+  sel.addEventListener('change', () => {
+    if (game.history().length && !confirm('Leave this game and switch world?')) { sel.value = worldFile; return; }  // ux-08
+    location.search = `?world=${sel.value}&mode=${MODE}&side=${HUMAN}&level=${LEVEL.id}`;
   });
+  function resetGame() {
+    game.reset(); syncPieces(); clearMarkers(); updateCheck(); updateCaptured(); updateUndo();
+    ['#card', '#coach', '#opening', '#inspector', '#over'].forEach((s) => $(s)?.classList.remove('show'));
+    eyeTarget = null; if (MODE === 'hotseat' && autoFlip) { flip = false; } applyPreset(PRESETS[presetIdx]); updateStatus();
+    if (vsAI && game.turn() !== HUMAN) aiMove();
+  }
+  $('#newBtn').addEventListener('click', resetGame);
+  $('#overNew')?.addEventListener('click', () => { $('#over')?.classList.remove('show'); resetGame(); });
+  $('#undoBtn')?.addEventListener('click', undo);
   $('#viewBtn').addEventListener('click', () => { eyeMode = false; $('#eyeBtn')?.classList.remove('on'); presetIdx = (presetIdx + 1) % PRESETS.length; $('#viewName').textContent = PRESETS[presetIdx].name; applyPreset(PRESETS[presetIdx]); });
   $('#flipBtn').addEventListener('click', () => { flip = !flip; applyPreset(PRESETS[presetIdx]); });
-  $('#muteBtn').addEventListener('click', () => { muted = !muted; if (muted) speechSynthesis?.cancel?.(); $('#muteBtn').textContent = muted ? '🔇' : '🔊'; });
+  $('#autoflipBtn')?.addEventListener('click', () => {
+    autoFlip = !autoFlip; $('#autoflipBtn').classList.toggle('on', autoFlip);
+    if (autoFlip && MODE === 'hotseat') { flip = game.turn() === 'b'; applyPreset(PRESETS[presetIdx]); }
+  });
+  $('#muteBtn').addEventListener('click', () => { muted = !muted; if (muted) speechSynthesis?.cancel?.(); $('#muteBtn').innerHTML = muted ? '🔇 Voice' : '🔊 Voice'; $('#muteBtn').classList.toggle('on', !muted); });
   $('#hintBtn')?.addEventListener('click', async () => {
-    if (busy || aiThinking || game.isGameOver() || (vsAI && !isHumanTurn())) return;
+    if (busy || aiThinking || training || game.isGameOver() || (vsAI && !isHumanTurn())) return;
     const h = await think('hint', { fen: game.fen(), level: LEVEL.id });
     if (h) { hintArrow(h.from, h.to); showCoach({ tone: 'nudge', title: 'Hint', message: `${h.san} — ${h.why}` }); }
   });
   $('#eyeBtn')?.addEventListener('click', () => {
     eyeMode = !eyeMode; $('#eyeBtn').classList.toggle('on', eyeMode);
     if (eyeMode && selected) { const p = game.get(selected.square); if (p) setEye(selected.square, p.color, p.type); }
+    else if (eyeMode) { showCoach({ tone: 'nudge', title: "Warrior's Eye", message: 'Tap one of your pieces to look through its eyes.' }); }
     else { eyeTarget = null; applyPreset(PRESETS[presetIdx]); }
   });
+  // overflow menu (ux-10)
+  const moreBtn = $('#moreBtn'), moreMenu = $('#more');
+  moreBtn?.addEventListener('click', (e) => { e.stopPropagation(); const on = moreMenu.classList.toggle('show'); moreBtn.setAttribute('aria-expanded', on); });
+  document.addEventListener('click', (e) => { if (moreMenu?.classList.contains('show') && !moreMenu.contains(e.target) && e.target !== moreBtn) { moreMenu.classList.remove('show'); moreBtn.setAttribute('aria-expanded', 'false'); } });
+  // inspector close (ux-02)
+  $('#inspClose')?.addEventListener('click', () => $('#inspector')?.classList.remove('show'));
+  // trainer controls (ux-11)
+  $('#trPause')?.addEventListener('click', () => { trainerPaused = !trainerPaused; $('#trPause').textContent = trainerPaused ? '▶ Resume' : '⏸ Pause'; });
+  $('#trExit')?.addEventListener('click', () => { trainerExit = true; trainerPaused = false; });
   document.querySelectorAll('nav a').forEach((a) => { a.href = `${a.getAttribute('href').split('?')[0]}?world=${worldFile}`; });
 
-  updateStatus();
+  updateStatus(); updateUndo(); updateCaptured();
   if (TRAIN) runTrainer(TRAIN);
   else if (vsAI && game.turn() !== HUMAN) aiMove();     // AI opens when the human plays black
   function loop() {
@@ -642,6 +747,7 @@ async function main() {
     const t = performance.now() * 0.001;
     selRing.material.opacity = 0.55 + Math.sin(t * 4) * 0.25;
     selRing.rotation.z = t * 0.6;
+    if (checkRing.visible) { checkRing.material.opacity = 0.6 + Math.sin(t * 6) * 0.35; checkRing.rotation.z = -t * 0.8; }
     renderer.render(scene, camera);
     if (insp && $('#inspector')?.classList.contains('show')) { insp.holder.rotation.y = t * 0.9; insp.r.render(insp.sc, insp.cm); }
   }
@@ -663,6 +769,14 @@ async function main() {
     mode: () => MODE, level: () => LEVEL.id, human: () => HUMAN,
     aiThinking: () => aiThinking,
     inspector: () => ({ shown: !!$('#inspector')?.classList.contains('show'), name: $('#inspName')?.textContent || '' }),
+    undo: () => undo(),
+    canUndo: () => !$('#undoBtn')?.disabled,
+    captured: () => ({ w: $('#capW')?.textContent || '', b: $('#capB')?.textContent || '' }),
+    inCheck: () => game.inCheck(),
+    checkShown: () => checkRing.visible,
+    gameOver: () => ({ shown: !!$('#over')?.classList.contains('show'), title: $('#overTitle')?.textContent || '' }),
+    moves: () => game.history().length,
+    load: (fen) => { try { game.load(fen); syncPieces(); updateCheck(); updateCaptured(); updateUndo(); clearMarkers(); updateStatus(); return true; } catch { return false; } },
   };
 }
 
