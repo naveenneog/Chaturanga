@@ -65,6 +65,12 @@
         <p id="lvlBlurb"></p>
       </div>
 
+      <h2>Board</h2>
+      <div class="row" id="renderRow">
+        <button class="opt sel" data-render="3d">3D board<small>real-time carved figures</small></button>
+        <button class="opt" data-render="2d">2D board<small>classic · light &amp; fast</small></button>
+      </div>
+
       <button class="begin" id="begin">⚔ Begin the battle</button>
 
       <h2>Learn the openings</h2>
@@ -83,8 +89,8 @@
         if (e.target.closest('button, .world, .opt, .lvl, .op')) audio.sfx('ui');
       }, true);
 
-      const WORLD_IDS = ['kurukshetra', 'ramayana'];
-      const state = { world: 'kurukshetra', mode: 'ai', side: 'w', level: 3 };
+      const WORLD_IDS = ['kurukshetra', 'ramayana', 'kalinga', 'devasura'];
+      const state = { world: 'kurukshetra', mode: 'ai', side: 'w', level: 3, render: '3d' };
       const worlds = {};
 
       const q = new URLSearchParams(location.search);
@@ -123,7 +129,12 @@
           document.getElementById('sideRow').classList.toggle('hide', state.mode !== 'ai');
           document.getElementById('levelWrap').style.display = state.mode === 'ai' ? '' : 'none';
         });
+        document.querySelectorAll('#renderRow .opt').forEach((el) => el.onclick = () => {
+          state.render = el.dataset.render;
+          document.querySelectorAll('#renderRow .opt').forEach((x) => x.classList.toggle('sel', x === el));
+        });
       }
+      const page = () => (state.render === '2d' ? 'play2d.html' : 'play.html');
       function renderLevels() {
         const host = document.getElementById('levels');
         host.innerHTML = LEVELS.map((l) => `<button class="lvl ${l.id === state.level ? 'sel' : ''}" data-lvl="${l.id}">
@@ -136,12 +147,12 @@
         const host = document.getElementById('openings');
         host.innerHTML = OPENINGS.map((o) => `<button class="op" data-op="${o.id}"><b>${o.name}</b><small>${o.sub} — ${o.idea.split('.')[0]}.</small></button>`).join('');
         host.querySelectorAll('.op').forEach((el) => el.onclick = () => {
-          location.href = `play.html?world=${state.world}&mode=${state.mode}&side=${state.side}&level=${state.level}&train=${el.dataset.op}`;
+          location.href = `${page()}?world=${state.world}&mode=${state.mode}&side=${state.side}&level=${state.level}&train=${el.dataset.op}`;
         });
       }
       document.getElementById('begin').onclick = () => {
         const p = new URLSearchParams({ world: state.world, mode: state.mode, side: state.side, level: String(state.level) });
-        location.href = `play.html?${p.toString()}`;
+        location.href = `${page()}?${p.toString()}`;
       };
 
       renderModes(); renderLevels(); renderOpenings(); loadWorlds();
