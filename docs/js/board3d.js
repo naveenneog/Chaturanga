@@ -3,7 +3,7 @@
 // revealed and read aloud on select / capture / promotion. Local hotseat.
 import * as THREE from '../vendor/three.module.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
-import { newGame, TYPE_TO_KEY, selectMoment, moveMoment } from './rules.js';
+import { newGame, TYPE_TO_KEY, selectMoment, moveMoment, sidePieces } from './rules.js';
 import { makePiece } from './pieces3d.js';
 import { bestMove as bestMoveMain, LEVELS, levelById } from './engine.js';
 import { hint as hintMain, reviewMove as reviewMain, openingNote, openingStep } from './coach.js';
@@ -449,8 +449,12 @@ async function main() {
     const over = $('#over'); if (!over) return;
     let kind = 'Draw', title = 'A draw', line = 'A hard-fought balance — neither Raja falls today.';
     if (game.isCheckmate()) {
-      const winner = sideName(game.turn() === 'w' ? 'b' : 'w');
-      kind = 'Victory'; title = `${world.checkmateTitle || 'Victory'} — ${winner} win`; line = world.checkmateLine || '';
+      const winColor = game.turn() === 'w' ? 'b' : 'w';   // the side that delivered mate
+      const winner = sideName(winColor);
+      const darkWin = winColor === 'b';
+      kind = 'Victory';
+      title = `${(darkWin ? world.checkmateTitleDark : null) || world.checkmateTitle || 'Victory'} — ${winner} win`;
+      line = (darkWin ? world.checkmateLineDark : null) || world.checkmateLine || '';
     } else if (game.isStalemate()) { kind = 'Stalemate'; title = 'Stalemate'; line = 'No legal move remains, yet the Raja stands — the game is drawn.'; }
     else if (game.isDraw()) { kind = 'Draw'; title = 'A draw'; line = 'The field is balanced — a draw by repetition or insufficient force.'; }
     $('#overKind').textContent = kind;
@@ -497,7 +501,7 @@ async function main() {
     const piece = game.get(square);
     if (!showMoves(square)) { clearMarkers(); }
     audio.sfx('select');
-    reveal(selectMoment(world, piece.type), true);
+    reveal(selectMoment(world, piece.type, piece.color), true);   // per-side identity
     inspectPiece(piece.type, piece.color);            // rotating render + movement pattern
     if (eyeMode) setEye(square, piece.color, piece.type);
   }
@@ -691,7 +695,7 @@ async function main() {
     g.position.set(-c.x, -(b2.min.y + (b2.max.y - b2.min.y) / 2), -c.z);
     insp.holder.add(g);
     drawMovePattern(key);
-    const info = world.pieces[key] || {};
+    const info = sidePieces(world, color)[key] || {};   // per-side name/glyph
     const nm = $('#inspName'); if (nm) nm.textContent = `${info.glyph || ''} ${info.name || key}`.trim();
     const panel = $('#inspector'); if (panel) panel.classList.add('show');
   }
