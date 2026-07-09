@@ -151,8 +151,10 @@ async function main() {
   // ---------- move ----------
   async function doMove(from, to, opt = {}) {
     const fenBefore = game.fen();
-    const mv = game.move({ from, to, promotion: opt.promotion || 'q' });
-    if (!mv) return;
+    let mv;
+    try { mv = game.move({ from, to, promotion: opt.promotion || 'q' }); }
+    catch { mv = null; }   // chess.js THROWS on an illegal move
+    if (!mv) { busy = false; return; }
     audio.sfx(mv.flags.includes('k') || mv.flags.includes('q') ? 'castle' : mv.captured ? 'capture' : mv.flags.includes('p') ? 'promote' : 'move');
     busy = true; clearMarkers();
     // animate the moving piece element to the destination, then reconcile
@@ -170,7 +172,15 @@ async function main() {
   }
   async function aiMove() {
     if (aiThinking) return; aiThinking = true; busy = true; setThinking(true);
-    try { const r = await think('best', { fen: game.fen(), level: LEVEL.id }); if (r && r.move) { busy = false; await doMove(r.move.from, r.move.to, { ai: true }); } }
+    try {
+      const r = await think('best', { fen: game.fen(), level: LEVEL.id });
+      const legal = game.moves({ verbose: true });
+      let mv = r && r.move;
+      if (legal.length && (!mv || !legal.some((m) => m.from === mv.from && m.to === mv.to))) {
+        mv = legal[Math.floor(Math.random() * legal.length)];   // never stall auto-play
+      }
+      if (mv) { busy = false; await doMove(mv.from, mv.to, { ai: true, promotion: mv.promotion }); }
+    }
     catch { /* ignore */ } finally { aiThinking = false; busy = false; setThinking(false); }
   }
   async function reviewHuman(fenBefore, mv) {

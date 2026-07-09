@@ -65,3 +65,36 @@ test('a strong level plays a legal, non-null move in a middlegame', () => {
     .some((m) => m.from === r.move.from && m.to === r.move.to);
   assert.ok(legal, 'move is legal');
 });
+
+// Regression: a search that TIMES OUT before the first depth completes must not corrupt the shared
+// board and leak an opponent's reply as the "best" root move. (Previously halted AI auto-play.)
+test('analyze under an impossibly tight time budget still returns a LEGAL root move', () => {
+  const fens = [
+    'r2q1rk1/pppb1ppp/2nb1n2/3pp3/3P4/2NBPN2/PPP2PPP/R1BQ1RK1 w - - 0 9', // the exact failing position
+    'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 4 4',
+    'rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2',
+  ];
+  for (const fen of fens) {
+    const legal = new Chess(fen).moves({ verbose: true });
+    for (let i = 0; i < 8; i++) {
+      const a = analyze(fen, { depth: 5, maxMs: 1, quiesce: true }); // maxMs:1 forces the fallback
+      assert.ok(a.best, `has a best move for ${fen}`);
+      const ok = legal.some((m) => m.from === a.best.move.from && m.to === a.best.move.to);
+      assert.ok(ok, `fallback move ${a.best.move.from}${a.best.move.to} is legal for ${fen}`);
+    }
+  }
+});
+
+// Regression: every level must produce a legal move for the mover across a full self-played game.
+test('self-play at level 4 never yields an illegal move', () => {
+  const g = new Chess();
+  for (let i = 0; i < 40 && !g.isGameOver(); i++) {
+    const r = bestMove(g.fen(), 4);
+    assert.ok(r && r.move, `move ${i} is non-null`);
+    const legal = g.moves({ verbose: true }).some((m) => m.from === r.move.from && m.to === r.move.to);
+    assert.ok(legal, `move ${i} (${r.move.from}${r.move.to}) is legal for ${g.fen()}`);
+    const mv = { from: r.move.from, to: r.move.to };
+    if (r.move.promotion) mv.promotion = r.move.promotion;
+    g.move(mv);
+  }
+});

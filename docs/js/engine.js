@@ -126,16 +126,22 @@ function orderMoves(moves) {
     .map((x) => x.m);
 }
 
+const TIMEOUT = Symbol('timeout');
+
 // Quiescence: only search captures until the position is "quiet" (avoids the horizon effect).
-function quiesce(game, alpha, beta, sideSign) {
+// Every game.move() is paired with a game.undo() in a `finally` so a TIMEOUT thrown mid-search can
+// never leave the shared Chess object in a corrupted (extra-moves-applied) state.
+function quiesce(game, alpha, beta, sideSign, deadline) {
+  if (deadline && Date.now() > deadline) throw TIMEOUT;
   const stand = evaluateBoard(game) * sideSign;
   if (stand >= beta) return beta;
   if (stand > alpha) alpha = stand;
   const caps = orderMoves(game.moves({ verbose: true }).filter((m) => m.captured || m.promotion));
   for (const mv of caps) {
     game.move({ from: mv.from, to: mv.to, promotion: mv.promotion || 'q' });
-    const score = -quiesce(game, -beta, -alpha, -sideSign);
-    game.undo();
+    let score;
+    try { score = -quiesce(game, -beta, -alpha, -sideSign, deadline); }
+    finally { game.undo(); }
     if (score >= beta) return beta;
     if (score > alpha) alpha = score;
   }
@@ -146,22 +152,21 @@ function negamax(game, depth, alpha, beta, sideSign, ply, opt, deadline) {
   if (Date.now() > deadline) throw TIMEOUT;
   if (game.isCheckmate()) return -MATE + ply;      // side to move is mated
   if (game.isDraw() || game.isStalemate() || game.isThreefoldRepetition?.()) return 0;
-  if (depth <= 0) return opt.quiesce ? quiesce(game, alpha, beta, sideSign) : evaluateBoard(game) * sideSign;
+  if (depth <= 0) return opt.quiesce ? quiesce(game, alpha, beta, sideSign, deadline) : evaluateBoard(game) * sideSign;
 
   const moves = orderMoves(game.moves({ verbose: true }));
   let best = -Infinity;
   for (const mv of moves) {
     game.move({ from: mv.from, to: mv.to, promotion: mv.promotion || 'q' });
-    const score = -negamax(game, depth - 1, -beta, -alpha, -sideSign, ply + 1, opt, deadline);
-    game.undo();
+    let score;
+    try { score = -negamax(game, depth - 1, -beta, -alpha, -sideSign, ply + 1, opt, deadline); }
+    finally { game.undo(); }        // always restore the board, even on a TIMEOUT throw
     if (score > best) best = score;
     if (best > alpha) alpha = best;
     if (alpha >= beta) break;
   }
   return best;
 }
-
-const TIMEOUT = Symbol('timeout');
 
 // Score every legal root move to `depth`. Each root move is searched with a FULL window so its
 // returned value is the exact minimax score (needed for ranking + blunder analysis, not just the
@@ -173,8 +178,9 @@ function scoreRoot(game, depth, opt, deadline) {
   const scored = [];
   for (const mv of moves) {
     game.move({ from: mv.from, to: mv.to, promotion: mv.promotion || 'q' });
-    const score = -negamax(game, depth - 1, -Infinity, Infinity, -sideSign, 1, opt, deadline);
-    game.undo();
+    let score;
+    try { score = -negamax(game, depth - 1, -Infinity, Infinity, -sideSign, 1, opt, deadline); }
+    finally { game.undo(); }        // keep `game` clean so a timeout can't corrupt the root move list
     scored.push({ move: mv, score });
   }
   scored.sort((a, b) => b.score - a.score);
@@ -202,7 +208,10 @@ export function analyze(fen, opts = {}) {
     if (Date.now() > deadline) break;
   }
   if (!best) {
-    const scored = scoreRoot(game, 1, opt, Date.now() + 60000);
+    // Nothing completed before the first deadline: search depth 1 on a FRESH board with no
+    // quiescence so it always returns quickly with LEGAL root moves (never a corrupted position).
+    const fresh = new Chess(fen);
+    const scored = scoreRoot(fresh, 1, { quiesce: false }, Date.now() + 60000);
     best = { depth: 1, moves: scored };
   }
   return {

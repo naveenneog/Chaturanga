@@ -235,12 +235,32 @@ async function main() {
     white: { tint: '#fff6e2', roughness: 0.42, metalness: 0.04, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.05, clearcoat: 0.4 },
     black: { tint: '#4a3120', roughness: 0.46, metalness: 0.06, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.0, clearcoat: 0.5 },
   };
+  // Finishes & glows the player can cycle. `emissive` (army-coloured, additive) is the strongest,
+  // most visible lever — it makes BOTH armies glow, even the near-black one, where a multiplied
+  // tint alone can never show. metalness/roughness/clearcoat/envMapIntensity vary the surface finish.
   const STYLE_PRESETS = [
     { name: 'Themed', themed: true },
-    { name: 'Ivory & Ebony', white: { tint: '#efe4c8', roughness: 0.34, metalness: 0.0, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.1, clearcoat: 0.5 }, black: { tint: '#241812', roughness: 0.3, metalness: 0.05, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.0, clearcoat: 0.6 } },
-    { name: 'Jade & Onyx', white: { tint: '#bfe6cf', roughness: 0.22, metalness: 0.12, emissive: '#06140d', emissiveIntensity: 0.15, envMapIntensity: 1.3, clearcoat: 0.7 }, black: { tint: '#1b2a28', roughness: 0.18, metalness: 0.18, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.2, clearcoat: 0.8 } },
-    { name: 'Bronze & Iron', white: { tint: '#d0a25f', roughness: 0.34, metalness: 0.75, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.3, clearcoat: 0.15 }, black: { tint: '#3a3a42', roughness: 0.4, metalness: 0.82, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.2, clearcoat: 0.15 } },
-    { name: 'Marble & Slate', white: { tint: '#ece7db', roughness: 0.52, metalness: 0.0, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 0.8, clearcoat: 0.3 }, black: { tint: '#2f333b', roughness: 0.5, metalness: 0.06, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 0.8, clearcoat: 0.3 } },
+    { name: 'Ivory & Ebony',
+      white: { tint: '#efe4c8', roughness: 0.40, metalness: 0.0, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.10, clearcoat: 0.5 },
+      black: { tint: '#241812', roughness: 0.34, metalness: 0.05, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.0, clearcoat: 0.6 } },
+    { name: 'Bronze & Gold',            // polished metal — strong reflections
+      white: { tint: '#f4c667', roughness: 0.26, metalness: 0.92, emissive: '#241400', emissiveIntensity: 0.14, envMapIntensity: 1.8, clearcoat: 0.2 },
+      black: { tint: '#8a5a24', roughness: 0.32, metalness: 0.96, emissive: '#160c00', emissiveIntensity: 0.12, envMapIntensity: 1.7, clearcoat: 0.2 } },
+    { name: 'Jade & Onyx',              // polished stone with a soft inner glow
+      white: { tint: '#a8e6c4', roughness: 0.18, metalness: 0.15, emissive: '#0f4a2c', emissiveIntensity: 0.40, envMapIntensity: 1.4, clearcoat: 0.85 },
+      black: { tint: '#274b42', roughness: 0.16, metalness: 0.20, emissive: '#0a3326', emissiveIntensity: 0.42, envMapIntensity: 1.3, clearcoat: 0.9 } },
+    { name: 'Ember Glow',               // fiery, high emissive
+      white: { tint: '#ffd9a0', roughness: 0.45, metalness: 0.10, emissive: '#ff7a1a', emissiveIntensity: 0.85, envMapIntensity: 1.1, clearcoat: 0.3 },
+      black: { tint: '#c23a24', roughness: 0.42, metalness: 0.14, emissive: '#ff2410', emissiveIntensity: 0.80, envMapIntensity: 1.0, clearcoat: 0.3 } },
+    { name: 'Celestial',                // cool blue / violet radiance, metallic sheen
+      white: { tint: '#c4dcff', roughness: 0.25, metalness: 0.40, emissive: '#2a6bff', emissiveIntensity: 0.70, envMapIntensity: 1.5, clearcoat: 0.7 },
+      black: { tint: '#8a6cff', roughness: 0.24, metalness: 0.45, emissive: '#6a2aff', emissiveIntensity: 0.75, envMapIntensity: 1.4, clearcoat: 0.75 } },
+    { name: 'Sandal & Rosewood',        // warm matte carved wood
+      white: { tint: '#e8c89a', roughness: 0.64, metalness: 0.0, emissive: '#2a1200', emissiveIntensity: 0.10, envMapIntensity: 0.8, clearcoat: 0.2 },
+      black: { tint: '#3a241a', roughness: 0.58, metalness: 0.0, emissive: '#180a00', emissiveIntensity: 0.10, envMapIntensity: 0.75, clearcoat: 0.25 } },
+    { name: 'Pearl & Obsidian',         // glossy, high clearcoat
+      white: { tint: '#f5efe6', roughness: 0.12, metalness: 0.10, emissive: '#14140f', emissiveIntensity: 0.12, envMapIntensity: 1.7, clearcoat: 1.0 },
+      black: { tint: '#16161e', roughness: 0.10, metalness: 0.22, emissive: '#0a0a18', emissiveIntensity: 0.18, envMapIntensity: 1.6, clearcoat: 1.0 } },
   ];
   let styleIdx = 0;
   try { const s = +localStorage.getItem('chaturanga_style'); if (s >= 0 && s < STYLE_PRESETS.length) styleIdx = s; } catch { /* ignore */ }
@@ -250,25 +270,35 @@ async function main() {
     if (preset.themed) return (world.pieceStyle && world.pieceStyle[side]) || DEFAULT_STYLE[side];
     return preset[side];
   }
+  // Apply a style's finish + glow to one material. `hasMap` keeps the baked concept texture (the
+  // tint multiplies it); without a map the tint becomes the base colour. Emissive is set on every
+  // material so glow presets are visible on BOTH armies, including the near-black one.
+  function applyStyle(m, st, hasMap, color) {
+    m.color = hasMap ? hx(st.tint, '#ffffff') : hx(st.tint, color === 'w' ? '#efe4c8' : '#241812');
+    m.roughness = st.roughness ?? 0.4;
+    m.metalness = st.metalness ?? 0.05;
+    m.emissive = hx(st.emissive, '#000000');
+    m.emissiveIntensity = st.emissiveIntensity || 0;
+    m.envMapIntensity = st.envMapIntensity ?? 1.0;
+    if ('clearcoat' in m) m.clearcoat = st.clearcoat ?? 0.4;
+    m.needsUpdate = true;
+    return m;
+  }
   function pieceFor(key, color) {
     const t = MODELS[color === 'w' ? 'w' : 'b'][key] || MODELS.w[key];
-    if (!t) return makePiece(key, color === 'w' ? whiteMat : blackMat);
-    const g = t.clone(true);
     const st = styleFor(color);
+    if (!t) {
+      const base = applyStyle((color === 'w' ? whiteMat : blackMat).clone(), st, false, color);
+      return makePiece(key, base);
+    }
+    const g = t.clone(true);
     g.traverse((n) => {
       if (!n.isMesh) return;
       n.castShadow = true;
-      if (n.material && n.material.map) {
-        const m = n.material.clone();
-        m.color = hx(st.tint, '#ffffff');
-        m.roughness = st.roughness; m.metalness = st.metalness;
-        m.emissive = hx(st.emissive, '#000000'); m.emissiveIntensity = st.emissiveIntensity || 0;
-        m.envMapIntensity = st.envMapIntensity ?? 1.0;
-        if ('clearcoat' in m) m.clearcoat = st.clearcoat ?? 0.4;
-        n.material = m;
-      } else {
-        n.material = color === 'w' ? whiteMat : blackMat;
-      }
+      const hasMap = !!(n.material && n.material.map);
+      const m = (n.material && n.material.isMaterial) ? n.material.clone() : new THREE.MeshPhysicalMaterial();
+      applyStyle(m, st, hasMap, color);
+      n.material = m;
     });
     g.userData.key = key;
     return g;
@@ -347,8 +377,10 @@ async function main() {
   let busy = false, aiThinking = false;
   async function doMove(from, to, opt = {}) {
     const fenBefore = game.fen();
-    const mv = game.move({ from, to, promotion: opt.promotion || 'q' });
-    if (!mv) return;
+    let mv;
+    try { mv = game.move({ from, to, promotion: opt.promotion || 'q' }); }
+    catch { mv = null; }   // chess.js THROWS on an illegal move — never let it halt the game
+    if (!mv) { busy = false; return; }
     audio.sfx(mv.flags.includes('k') || mv.flags.includes('q') ? 'castle' : mv.captured ? 'capture' : mv.flags.includes('p') ? 'promote' : 'move');
     busy = true;
     clearMarkers();
@@ -423,7 +455,14 @@ async function main() {
     setThinking(true);
     try {
       const r = await think('best', { fen: game.fen(), level: LEVEL.id });
-      if (r && r.move) { busy = false; await doMove(r.move.from, r.move.to, { ai: true }); }
+      const legal = game.moves({ verbose: true });
+      let mv = r && r.move;
+      // defensive: if the engine ever returns nothing or an illegal move, play a random legal one
+      // so auto-play never silently stalls (root cause of the "stops after a few moves" bug).
+      if (legal.length && (!mv || !legal.some((m) => m.from === mv.from && m.to === mv.to))) {
+        mv = legal[Math.floor(Math.random() * legal.length)];
+      }
+      if (mv) { busy = false; await doMove(mv.from, mv.to, { ai: true, promotion: mv.promotion }); }
     } catch { /* ignore; leave it human's move */ }
     finally { aiThinking = false; busy = false; setThinking(false); }
   }
@@ -836,6 +875,7 @@ async function main() {
   window.__c = {
     fen: () => game.fen(),
     turn: () => game.turn(),
+    legalMoves: () => game.moves({ verbose: true }),
     move: (from, to) => doMove(from, to),
     tap: (sq) => onTap({ col: FILES.indexOf(sq[0]), row: +sq[1] - 1, square: sq }),
     selected: () => (selected ? selected.square : null),
