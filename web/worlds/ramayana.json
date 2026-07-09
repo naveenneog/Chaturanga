@@ -78,5 +78,66 @@
   "promotionLine": "The steadfast Vanara, having crossed the whole field, is raised to a counsellor's rank. Devotion carried to its end becomes wisdom.",
   "checkLine": "Rama is threatened — rally the Vanara Sena and shield the heart of the cause.",
   "checkmateTitle": "Jaya Shri Rama — Victory of Dharma",
-  "checkmateLine": "Lanka falls and dharma is restored. Reflect: victory is hollow unless it serves what is right."
+  "checkmateLine": "Lanka falls and dharma is restored. Reflect: victory is hollow unless it serves what is right.",
+  "piecesDark": {
+    "raja": {
+      "name": "Ravana", "en": "Demon-King of Lanka", "glyph": "\u265a",
+      "moral": "Power without restraint is the seed of ruin",
+      "teaching": "Ravana's ten heads held every art and scripture, yet a single ungoverned desire undid them all. Guard the centre of your being — great power without dharma destroys itself.",
+      "fall": "When Ravana falls, ten crowns roll in the dust — no learning saves the one who will not master himself."
+    },
+    "mantri": {
+      "name": "Indrajit", "en": "Meghnad · Conqueror of Indra", "glyph": "\u265b",
+      "moral": "Genius bound to a wrong cause",
+      "teaching": "Indrajit ranged the whole field and even conquered the heavens, yet his brilliance served adharma. The sharpest mind is wasted, even ruinous, when it defends what is wrong.",
+      "fall": "When the great conqueror falls, Lanka learns that no weapon can defend an unjust cause forever."
+    },
+    "ratha": {
+      "name": "Ratha", "en": "Demon war-chariot", "glyph": "\u265c",
+      "moral": "Momentum toward the wrong end",
+      "teaching": "The demon-chariot charges without turning, but a straight road to a wrong goal only arrives at ruin the faster. Choose your direction before you build your speed.",
+      "fall": "A shattered demon-chariot warns that force in a bad cause still ends in the dust."
+    },
+    "gaja": {
+      "name": "Kumbhakarna", "en": "The Sleeping Titan", "glyph": "\u265d",
+      "moral": "Vast strength, spent in the wrong service",
+      "teaching": "Kumbhakarna woke from his slumber to fight for a brother he knew to be wrong, yet fought all the same. Loyalty is noble, but strength owed to adharma becomes a tragedy.",
+      "fall": "The titan falls, and the field learns that even mountains of might cannot hold up a falling cause."
+    },
+    "ashva": {
+      "name": "Rakshasa-Vira", "en": "Demon champion · the Leaper", "glyph": "\u265e",
+      "moral": "Cunning without conscience",
+      "teaching": "The demon-champion leaps where none expect, striking from the shadows. Cleverness is a blade that cuts both ways — unguided by conscience, it wounds its own wielder.",
+      "fall": "A fallen demon-champion reminds us that trickery, unmoored from truth, is still mortal."
+    },
+    "padati": {
+      "name": "Rakshasa", "en": "Demon foot-soldier", "glyph": "\u265f",
+      "moral": "The courage of the misled many",
+      "teaching": "The rakshasa foot-soldier never retreats, marching bravely for Lanka. Courage is real even in a wrong cause — so choose a cause worthy of your courage.",
+      "fall": "A rakshasa falls for Lanka's shadow — no soldier's bravery is small, though the cause may be."
+    }
+  },
+  "pawnTeachingsDark": [
+    "The rakshasa never retreats — but bravery is only as good as the cause it serves.",
+    "Even a soldier of the wrong side fights with a full heart; give that heart to what is right.",
+    "One demon marches for Lanka's pride; ask always whose pride your steps defend.",
+    "Strength offered to ego builds a wall that will one day fall on its builder.",
+    "Hold the line for your brothers — yet a wall raised for adharma cannot stand.",
+    "The first step into a wrong war is the hardest to unmake; weigh it before you take it.",
+    "You cannot un-march a step — so be sure of the banner you follow.",
+    "A demon guards Lanka's gate, unaware the true enemy stands within its king.",
+    "The sacrifice of the misled is the heaviest loss — spend yourself for truth.",
+    "Serve, but never blindly — even a foot-soldier answers for the cause he carries."
+  ],
+  "captureLinesDark": [
+    "The rakshasas strike hard, yet every blow for adharma recoils upon Lanka.",
+    "A foe falls to the demon host — but a victory without dharma is a debt, not a gain.",
+    "Lanka advances a square, and the shadow lengthens; attachment to conquest is its own defeat.",
+    "Strike for your king if you must, but know whose cause your sword truly serves.",
+    "Even Ravana's warriors were valiant — valour spent for ego is the saddest waste."
+  ],
+  "promotionLineDark": "A rakshasa foot-soldier, having crossed the whole field, is raised to a captain of Lanka. Yet rank in a falling cause only means a longer fall.",
+  "checkLineDark": "Ravana is threatened — the rakshasa host closes ranks to shield the demon-king of Lanka.",
+  "checkmateTitleDark": "The Shadow of Lanka Prevails",
+  "checkmateLineDark": "Lanka's shadow triumphs for a moment. Yet reflect: a victory raised on adharma carries within it the seed of its own undoing."
 }

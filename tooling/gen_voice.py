@@ -85,24 +85,30 @@ def key(text):
 
 
 def lines_for(world):
-    """Yield (text, voice, rate, pitch) for every read-aloud line in a world."""
-    p = world.get("pieces", {})
-    for k in ("raja", "mantri", "ratha", "gaja", "ashva", "padati"):
-        piece = p.get(k) or {}
-        if piece.get("teaching"):
-            yield (piece["teaching"], NARRATOR, "-2%", "0%")        # a piece's dharma — grave, wise
-        if piece.get("fall"):
-            yield (piece["fall"], NARRATOR, "-3%", "-1st")          # a fallen piece — solemn
-    for t in world.get("pawnTeachings", []):
-        yield (t, GENTLE, "0%", "0%")                              # foot-soldier life-lessons — gentle
-    for t in world.get("captureLines", []):
-        yield (t, NARRATOR, "-3%", "-1st")                          # battlefield — solemn
-    if world.get("promotionLine"):
-        yield (world["promotionLine"], GENTLE, "+2%", "+1st")       # rebirth — uplifting
-    if world.get("checkLine"):
-        yield (world["checkLine"], NARRATOR, "+3%", "0%")          # peril — urgent
-    if world.get("checkmateLine"):
-        yield (world["checkmateLine"], NARRATOR, "-2%", "0%")      # victory — grand
+    """Yield (text, voice, rate, pitch) for every read-aloud line in a world (both sides)."""
+    def army(pieces_key, pawns_key, caps_key, promo_key, check_key, mate_key, dark):
+        p = world.get(pieces_key) or {}
+        # graver prosody for the rakshasa/dark side
+        grave = ("-3%", "-1st") if dark else ("-2%", "0%")
+        for k in ("raja", "mantri", "ratha", "gaja", "ashva", "padati"):
+            piece = p.get(k) or {}
+            if piece.get("teaching"):
+                yield (piece["teaching"], NARRATOR, grave[0], grave[1])
+            if piece.get("fall"):
+                yield (piece["fall"], NARRATOR, "-3%", "-1st")
+        for t in world.get(pawns_key, []):
+            yield (t, GENTLE, "0%", "0%")
+        for t in world.get(caps_key, []):
+            yield (t, NARRATOR, "-3%", "-1st")
+        if world.get(promo_key):
+            yield (world[promo_key], GENTLE, "+2%", "+1st")
+        if world.get(check_key):
+            yield (world[check_key], NARRATOR, "+3%", "0%")
+        if world.get(mate_key):
+            yield (world[mate_key], NARRATOR, "-2%", "0%")
+    yield from army("pieces", "pawnTeachings", "captureLines", "promotionLine", "checkLine", "checkmateLine", dark=False)
+    if world.get("piecesDark"):
+        yield from army("piecesDark", "pawnTeachingsDark", "captureLinesDark", "promotionLineDark", "checkLineDark", "checkmateLineDark", dark=True)
 
 
 def main():
