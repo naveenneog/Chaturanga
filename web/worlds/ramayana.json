@@ -3,6 +3,7 @@
   "title": "Lanka — the War of the Ramayana",
   "subtitle": "devotion, loyalty and dharma on the causeway to Lanka",
   "assets": "assets/ramayana",
+  "models": true,
   "voice": { "web": "en-IN", "azure": "en-IN-Arjun:DragonHDLatestNeural" },
   "sides": { "white": "Vanara Sena", "black": "Rakshasas" },
   "theme": {

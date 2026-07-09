@@ -13,8 +13,8 @@ import time
 from gradio_client import Client, handle_file
 
 SPACE = "tencent/Hunyuan3D-2"
-REFS = os.path.join("web", "assets", "kurukshetra", "refs")
-OUTDIR = os.path.join("tooling", "hunyuan_out")
+REFS = os.environ.get("REFS_DIR", os.path.join("web", "assets", "kurukshetra", "refs"))
+OUTDIR = os.environ.get("OUT_DIR", os.path.join("tooling", "hunyuan_out"))
 OCT = int(os.environ.get("OCTREE", "256"))
 tok = os.environ.get("HF_TOKEN")
 

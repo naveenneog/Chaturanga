@@ -192,13 +192,20 @@ async function main() {
     obj.position.set(-c.x, -box.min.y, -c.z);
   }
   async function loadModels() {
+    const mBase = world.assets || `assets/${worldFile}`;
     await Promise.all(Object.keys(TARGET_H).map(async (k) => {
-      try {
-        const gltf = await loadGLB(`assets/models/${k}.glb`);
-        normalize(gltf.scene, TARGET_H[k]);
-        const t = new THREE.Group(); t.add(gltf.scene);
-        MODELS[k] = t;
-      } catch { /* keep procedural fallback */ }
+      // worlds that declare "models": true carry their own army under <assets>/models/;
+      // otherwise use the shared army (avoids 404s for shared-model worlds)
+      const sources = world.models ? [`${mBase}/models/${k}.glb`, `assets/models/${k}.glb`] : [`assets/models/${k}.glb`];
+      for (const url of sources) {
+        try {
+          const gltf = await loadGLB(url);
+          normalize(gltf.scene, TARGET_H[k]);
+          const t = new THREE.Group(); t.add(gltf.scene);
+          MODELS[k] = t;
+          break;
+        } catch { /* try next source */ }
+      }
     }));
   }
   // pieces with a clear front (muzzle / spear) point at +X in their model

@@ -16,7 +16,7 @@ tooling/TripoSR/out*/
 tooling/TripoSR/examples/
 tooling/Hunyuan3D-2/
 tooling/hunyuan_out/
-web/assets/kurukshetra/refs/*.proj.jpg
+web/assets/*/refs/*.proj.jpg
 
 tooling/.rodin_key
 *.key

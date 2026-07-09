@@ -83,6 +83,40 @@ WORLDS = {
             "and sovereign — the heart of the army."
         ),
     },
+    "ramayana": {
+        "padati": (
+            "A heroic vanara (monkey) foot-soldier of Rama's army: an upright, muscular "
+            "anthropomorphic monkey with a noble expressive face, wearing a simple warrior's "
+            "loincloth and a beaded chest ornament, gripping a stout knotted wooden club, a long "
+            "tail curling behind, standing alert, loyal and brave."
+        ),
+        "ashva": (
+            "A mighty leaping vanara champion evoking Hanuman: a powerful anthropomorphic monkey "
+            "caught mid-leap on one bent leg, one arm raised high with a heavy mace, chest thrust "
+            "forward, a long flowing tail streaming behind, muscular and devoted — full of soaring "
+            "upward motion and courage."
+        ),
+        "gaja": (
+            "A colossal armoured war-bear of the vanara host evoking Jambavan: a huge standing bear "
+            "on all fours with a decorated ceremonial face-plate and jewelled drapes, a small ornate "
+            "canopied howdah on its broad back — immense, ancient and wise."
+        ),
+        "ratha": (
+            "An ornate ancient Indian war-chariot of the Ramayana: a single curved chariot car on two "
+            "large spoked wheels drawn by a pair of stylised horses, a tall fluttering pennant and a "
+            "great longbow resting across the car — poised and noble."
+        ),
+        "mantri": (
+            "A dignified rakshasa noble counsellor evoking Vibhishana: a tall regal figure with a "
+            "serene wise face, princely robes, ornate crown and jewellery, one hand raised in wise "
+            "counsel — the righteous adviser who chose dharma."
+        ),
+        "raja": (
+            "The prince Rama as a noble archer-king: a crowned, serene royal figure standing tall, "
+            "holding a great ceremonial longbow upright in one hand with a quiver of arrows at his "
+            "back, richly robed and jewelled — the ideal king and heart of the army."
+        ),
+    },
 }
 
 ORDER = ["padati", "ashva", "gaja", "ratha", "mantri", "raja"]
