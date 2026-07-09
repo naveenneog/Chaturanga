@@ -187,10 +187,19 @@ no-signup CPU fallback. Reproduce with the `.venv3d` (Python 3.11 via `uv`, torc
 - Generated textures/panoramas: save as **JPG** (gpt-image PNGs are ~1–2 MB each; JPG ~150–380 KB).
 
 ## Piece styles + per-side voice (v1.0)
-- **Piece-style system** (`board3d.js` `pieceFor`→`styleFor(color)`): a style = {tint, roughness,
-  metalness, emissive, emissiveIntensity, envMapIntensity, clearcoat}. Each world may set
-  `pieceStyle.{white,black}` (kalinga=bronze/iron, devasura=radiant-gold-GLOW/dark-cosmic); the
-  **🎨 Style** button (More menu) cycles **5 presets** (persisted `localStorage 'chaturanga_style'`).
+- **Glow & glory:** a **bloom** post-processing chain (vendored three r185 `EffectComposer`/
+  `RenderPass`/`UnrealBloomPass`/`OutputPass` in `web/vendor/`, `'../shaders/'` patched to `'./'`)
+  makes emissive pieces halo with light; `composer.render()` replaces `renderer.render()` when the
+  **✨ Glow** toggle is on (persisted `chaturanga_glow`). A **rim/back light** carves a glowing edge.
+  Bloom params ~ strength 0.62 / radius 0.6 / threshold 0.86 so only glowing pieces bloom.
+- **Warrior Styles system** (`board3d.js` `pieceFor`→`styleFor(color)`→`applyStyle`): a style =
+  {tint, roughness, metalness, **emissive**, emissiveIntensity, envMapIntensity, clearcoat}. Emissive
+  is army-coloured & additive, so BOTH armies glow in distinct hues (the near-black army too).
+  **11 presets** with `swatch:[white,black]`: Themed, Ivory & Ebony, Divine Radiance, Blood & Iron,
+  Jade Warrior, Ember Forge, Celestial Azure, Emerald & Ruby, Royal Amethyst, Bronze & Gold,
+  Pearl & Obsidian. A **picker panel** (`#stylePanel`/`#spGrid`, colour-swatch grid + glow markers +
+  active state) is opened by the 🎨 button; `applyStyleIdx` persists `chaturanga_style`. Style applies
+  to every mesh (incl. untextured/procedural fallback); DEFAULT_STYLE has a soft glow floor.
 - **Per-side voice:** `tooling/gen_voice.py <world>` reads every teaching string for BOTH sides and
   synthesises DragonHD clips → `assets/<world>/voice/voice.json` (map: teaching→mp3). Voices:
   `en-IN-Arjun:DragonHDLatestNeural` (sage) + `en-IN-Neerja:DragonHDLatestNeural`. **Azure Speech
