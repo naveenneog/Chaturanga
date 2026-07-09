@@ -4,95 +4,237 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Chaturanga — the four-army game of dharma</title>
-    <meta name="theme-color" content="#1a0f08" />
-    <meta name="description" content="Chaturanga — the ancient Indian game of the four army divisions, played with modern chess moves. Play a teaching AI with 5 levels, learn openings, and master two themed worlds in real 3D." />
+    <meta name="theme-color" content="#120a04" />
+    <meta name="description" content="Chaturanga — ancient Indian chess in glowing real-time 3D. A teaching AI with 5 levels, an openings trainer, four themed worlds with eight distinct armies, and vivid Warrior Styles that make every piece glow." />
     <meta property="og:title" content="Chaturanga — the four-army game of dharma" />
-    <meta property="og:description" content="Ancient Indian chess in real 3D: a teaching AI with 5 levels, an openings trainer, a piece inspector, a Warrior's Eye camera, and two themed worlds." />
-    <meta property="og:image" content="img/ramayana.png" />
+    <meta property="og:description" content="Ancient Indian chess in glowing 3D: a teaching AI, an openings trainer, four themed worlds and vivid Warrior Styles with real bloom glow." />
+    <meta property="og:image" content="img/hero.jpg" />
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="img/icon.png" />
     <style>
-      :root { --bg:#140a04; --gold:#e8a33d; --gold2:#ffcf7a; --text:#f4e6cd; --muted:#b79b74; --panel:#241308; }
+      :root {
+        --bg:#0d0703; --bg2:#160c05; --gold:#e8a33d; --gold2:#ffcf7a; --ink:#f5e8cf;
+        --muted:#b79b74; --line:rgba(232,163,61,.26); --card:rgba(58,33,14,.42);
+      }
       * { box-sizing: border-box; }
-      html, body { margin: 0; background: radial-gradient(120% 70% at 50% -10%, #3a2110, #100802 65%); color: var(--text); font-family: Georgia, 'Noto Serif', serif; -webkit-font-smoothing: antialiased; }
-      a { color: var(--gold); }
-      .wrap { max-width: 1000px; margin: 0 auto; padding: 0 1.1rem; }
-      header { text-align: center; padding: 2.6rem 1rem 1.4rem; }
-      header img.icon { width: 128px; height: 128px; border-radius: 28px; box-shadow: 0 14px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(232,163,61,.4); }
-      h1 { font-size: clamp(2.2rem, 8vw, 3.6rem); letter-spacing: .12em; color: var(--gold); text-shadow: 0 0 34px rgba(232,163,61,.5); margin: .7rem 0 .1rem; }
-      .tag { color: var(--muted); font-style: italic; font-size: 1.12rem; margin: .1rem 0 1.4rem; }
-      .cta { display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; }
-      .btn { font: inherit; font-size: 1.1rem; padding: .85rem 1.5rem; border-radius: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: .4rem; min-height: 52px; }
-      .btn.play { background: linear-gradient(180deg, var(--gold2), var(--gold)); color: #241200; font-weight: bold; box-shadow: 0 12px 30px rgba(232,163,61,.4); border: 0; }
-      .btn.dl { background: rgba(255,255,255,.06); color: var(--text); border: 1px solid rgba(232,163,61,.45); }
-      .btn:hover { transform: translateY(-2px); }
-      .note { color: var(--muted); font-size: .82rem; margin-top: .7rem; }
-      section { padding: 1.8rem 0; }
-      h2 { font-size: .8rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); text-align: center; opacity: .9; margin-bottom: 1.2rem; }
-      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .9rem; }
-      .card { background: linear-gradient(180deg, rgba(60,34,14,.45), rgba(20,11,4,.55)); border: 1px solid rgba(232,163,61,.28); border-radius: 16px; padding: 1.1rem 1.2rem; }
-      .card h3 { margin: .1rem 0 .35rem; color: #ffe6bb; font-size: 1.12rem; }
-      .card p { margin: 0; color: var(--muted); line-height: 1.5; font-size: .95rem; }
-      .card .ic { font-size: 1.5rem; }
-      .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .8rem; }
-      .shots figure { margin: 0; }
-      .shots img { width: 100%; border-radius: 14px; border: 1px solid rgba(232,163,61,.28); box-shadow: 0 10px 26px rgba(0,0,0,.5); display: block; }
-      .shots figcaption { text-align: center; color: var(--muted); font-size: .82rem; margin-top: .4rem; }
-      .worlds2 { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
-      @media (max-width: 560px) { .worlds2 { grid-template-columns: 1fr; } }
-      footer { text-align: center; color: var(--muted); padding: 2rem 1rem 3rem; font-size: .86rem; border-top: 1px solid rgba(232,163,61,.18); margin-top: 1.5rem; }
+      html { scroll-behavior: smooth; }
+      body { margin:0; color:var(--ink); background:var(--bg);
+        font-family:"Iowan Old Style", Georgia, 'Noto Serif', serif; -webkit-font-smoothing:antialiased;
+        overflow-x:hidden; }
+      a { color:var(--gold2); text-decoration:none; }
+      .wrap { max-width:1080px; margin:0 auto; padding:0 1.2rem; }
+
+      /* ---------- hero ---------- */
+      .hero { position:relative; min-height:min(94vh,860px); display:flex; align-items:center; justify-content:center;
+        text-align:center; overflow:hidden; padding:5rem 1rem 4rem; }
+      .hero .bg { position:absolute; inset:0; background:#0d0703 center/cover no-repeat; z-index:0;
+        transform:scale(1.06); filter:saturate(1.08); animation:drift 26s ease-in-out infinite alternate; }
+      @keyframes drift { from { transform:scale(1.06) translateY(0); } to { transform:scale(1.12) translateY(-14px); } }
+      .hero .scrim { position:absolute; inset:0; z-index:1;
+        background:
+          radial-gradient(120% 90% at 50% 8%, rgba(13,7,3,.15), rgba(13,7,3,.62) 55%, #0d0703 92%),
+          linear-gradient(180deg, rgba(13,7,3,.35) 0%, rgba(13,7,3,0) 30%, rgba(13,7,3,.75) 100%); }
+      .hero .inner { position:relative; z-index:2; max-width:760px; }
+      .kicker { display:inline-flex; align-items:center; gap:.5rem; font-size:.72rem; letter-spacing:.28em; text-transform:uppercase;
+        color:var(--gold2); border:1px solid var(--line); background:rgba(20,11,4,.55); padding:.42rem .9rem; border-radius:999px;
+        backdrop-filter:blur(4px); }
+      h1 { font-size:clamp(3rem,13vw,6.4rem); letter-spacing:.1em; margin:1rem 0 .2rem; line-height:.98;
+        background:linear-gradient(180deg,#fff4dc,#ffcf7a 45%,#e8a33d 78%,#b9722a);
+        -webkit-background-clip:text; background-clip:text; color:transparent;
+        text-shadow:0 0 60px rgba(232,163,61,.35); animation:glow 4.5s ease-in-out infinite; }
+      @keyframes glow { 0%,100% { filter:drop-shadow(0 0 22px rgba(232,163,61,.25)); } 50% { filter:drop-shadow(0 0 40px rgba(255,207,122,.5)); } }
+      .tag { color:#f0dcae; font-style:italic; font-size:clamp(1.05rem,3.4vw,1.4rem); margin:.4rem auto 1.6rem; max-width:34ch; text-shadow:0 2px 18px rgba(0,0,0,.7); }
+      .cta { display:flex; gap:.8rem; justify-content:center; flex-wrap:wrap; }
+      .btn { font:inherit; font-size:1.08rem; padding:.9rem 1.6rem; border-radius:14px; display:inline-flex; align-items:center; gap:.5rem;
+        min-height:54px; cursor:pointer; transition:transform .16s, box-shadow .16s, background .16s; }
+      .btn.play { background:linear-gradient(180deg,var(--gold2),var(--gold)); color:#241200; font-weight:700; border:0;
+        box-shadow:0 14px 34px rgba(232,163,61,.42); }
+      .btn.dl { background:rgba(20,11,4,.55); color:var(--ink); border:1px solid var(--line); backdrop-filter:blur(4px); }
+      .btn:hover { transform:translateY(-3px); }
+      .btn.play:hover { box-shadow:0 18px 44px rgba(255,207,122,.55); }
+      .hero .note { color:#d9c299; font-size:.84rem; margin-top:1rem; text-shadow:0 2px 12px rgba(0,0,0,.7); }
+      .badges { display:flex; gap:.5rem; justify-content:center; flex-wrap:wrap; margin-top:1.4rem; }
+      .badge { font-size:.74rem; color:#e9d3a6; border:1px solid var(--line); border-radius:999px; padding:.35rem .8rem; background:rgba(20,11,4,.45); }
+
+      /* ---------- sections ---------- */
+      section { padding:3.4rem 0; }
+      .eyebrow { text-align:center; font-size:.74rem; letter-spacing:.24em; text-transform:uppercase; color:var(--gold); opacity:.9; margin:0 0 .5rem; }
+      .h2 { text-align:center; font-size:clamp(1.7rem,5vw,2.5rem); margin:0 0 .4rem;
+        background:linear-gradient(180deg,#fff4dc,#ffcf7a 60%,#e8a33d); -webkit-background-clip:text; background-clip:text; color:transparent; }
+      .lead { text-align:center; color:var(--muted); max-width:60ch; margin:0 auto 2rem; line-height:1.6; font-size:1.02rem; }
+      .divider { height:1px; background:linear-gradient(90deg,transparent,var(--line),transparent); border:0; margin:0; }
+
+      /* new-in banner */
+      .newin { position:relative; border:1px solid var(--line); border-radius:22px; overflow:hidden;
+        background:linear-gradient(180deg,rgba(40,22,10,.6),rgba(15,8,3,.7)); }
+      .newin .row { display:grid; grid-template-columns:1.15fr 1fr; gap:0; align-items:stretch; }
+      .newin figure { margin:0; }
+      .newin figure img { width:100%; height:100%; object-fit:cover; display:block; min-height:280px; }
+      .newin .txt { padding:2rem 2.1rem; align-self:center; }
+      .newin .pill { display:inline-block; font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:#241200;
+        background:linear-gradient(180deg,var(--gold2),var(--gold)); padding:.32rem .7rem; border-radius:999px; font-weight:700; }
+      .newin h3 { font-size:1.7rem; margin:.7rem 0 .5rem; color:#ffe6bb; }
+      .newin p { color:#d9c299; line-height:1.6; margin:0 0 .6rem; }
+      @media (max-width:720px){ .newin .row{ grid-template-columns:1fr; } .newin figure img{ min-height:220px; } }
+
+      /* warrior styles gallery */
+      .styles { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1rem; }
+      .style { position:relative; border-radius:18px; overflow:hidden; border:1px solid var(--line);
+        background:#0d0703; box-shadow:0 12px 30px rgba(0,0,0,.5); transition:transform .18s, box-shadow .18s; }
+      .style:hover { transform:translateY(-4px); box-shadow:0 20px 46px rgba(0,0,0,.6); }
+      .style img { width:100%; aspect-ratio:11/9; object-fit:cover; display:block; }
+      .style .cap { position:absolute; left:0; right:0; bottom:0; padding:1.4rem .9rem .7rem;
+        background:linear-gradient(180deg,transparent,rgba(8,4,1,.86)); display:flex; align-items:center; gap:.5rem; }
+      .style .dot { width:12px; height:12px; border-radius:50%; box-shadow:0 0 12px currentColor; }
+      .style .nm { font-size:.98rem; color:#fff2d6; }
+      .style .gl { margin-left:auto; font-size:.72rem; color:#ffd98a; }
+
+      /* feature cards */
+      .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:.9rem; }
+      .card { background:linear-gradient(180deg,var(--card),rgba(15,8,3,.55)); border:1px solid var(--line); border-radius:16px;
+        padding:1.2rem 1.3rem; transition:transform .16s, border-color .16s, box-shadow .16s; }
+      .card:hover { transform:translateY(-3px); border-color:rgba(232,163,61,.55); box-shadow:0 14px 34px rgba(0,0,0,.45); }
+      .card .ic { font-size:1.6rem; filter:drop-shadow(0 0 12px rgba(232,163,61,.4)); }
+      .card h3 { margin:.4rem 0 .35rem; color:#ffe6bb; font-size:1.1rem; }
+      .card p { margin:0; color:var(--muted); line-height:1.55; font-size:.94rem; }
+
+      /* worlds */
+      .worlds { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem; }
+      .world { position:relative; border-radius:18px; overflow:hidden; border:1px solid var(--line); box-shadow:0 12px 30px rgba(0,0,0,.5); }
+      .world img { width:100%; aspect-ratio:16/11; object-fit:cover; display:block; transition:transform .3s; }
+      .world:hover img { transform:scale(1.05); }
+      .world .cap { position:absolute; inset:auto 0 0 0; padding:1.6rem 1rem .8rem;
+        background:linear-gradient(180deg,transparent,rgba(8,4,1,.88)); }
+      .world .cap b { color:#fff2d6; font-size:1.05rem; display:block; }
+      .world .cap span { color:#cbb083; font-size:.85rem; }
+
+      /* screens */
+      .screens { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.9rem; }
+      .screens figure { margin:0; }
+      .screens img { width:100%; border-radius:14px; border:1px solid var(--line); box-shadow:0 10px 26px rgba(0,0,0,.5); display:block; }
+      .screens figcaption { text-align:center; color:var(--muted); font-size:.82rem; margin-top:.5rem; }
+
+      .foot-cta { text-align:center; background:linear-gradient(180deg,rgba(40,22,10,.5),rgba(15,8,3,.2)); border:1px solid var(--line);
+        border-radius:22px; padding:2.6rem 1.4rem; }
+      footer { text-align:center; color:var(--muted); padding:2.2rem 1rem 3rem; font-size:.86rem; }
+      footer a { color:var(--gold); }
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <header>
-        <img class="icon" src="img/icon.png" alt="Chaturanga app icon — a carved Raja" />
+    <!-- HERO -->
+    <header class="hero">
+      <div class="bg" style="background-image:url('img/hero.jpg')"></div>
+      <div class="scrim"></div>
+      <div class="inner">
+        <span class="kicker">◆ The four-army game of dharma ◆</span>
         <h1>Chaturanga</h1>
-        <p class="tag">the ancient game of the four army divisions — play, and learn its dharma</p>
+        <p class="tag">Ancient Indian chess, reborn in glowing real-time 3D — play, and learn its dharma.</p>
         <div class="cta">
           <a class="btn play" href="setup.html">⚔ Play in your browser</a>
-          <a class="btn dl" href="https://github.com/naveenneog/Chaturanga/releases/latest/download/Chaturanga-v1.0.0.apk">⬇ Download Android APK</a>
+          <a class="btn dl" href="https://github.com/naveenneog/Chaturanga/releases/download/v1.1.0/Chaturanga-v1.1.0.apk">⬇ Download Android APK</a>
         </div>
-        <p class="note">Real-3D board · works offline · no sign-in · a teaching AI that explains its dharma.</p>
-      </header>
+        <p class="note">Real-3D · works offline · no sign-in · a teaching AI that explains every move.</p>
+        <div class="badges">
+          <span class="badge">✨ Bloom glow</span>
+          <span class="badge">🎨 11 Warrior Styles</span>
+          <span class="badge">🌍 4 worlds · 8 armies</span>
+          <span class="badge">🧠 5-level AI + coach</span>
+          <span class="badge">🎲 3D &amp; 2D</span>
+        </div>
+      </div>
+    </header>
 
+    <div class="wrap">
+      <!-- NEW IN v1.1 -->
       <section>
-        <h2>What it is</h2>
+        <div class="newin">
+          <div class="row">
+            <figure><img src="img/style-amethyst.jpg" alt="Glowing amethyst and gold armies with bloom" /></figure>
+            <div class="txt">
+              <span class="pill">New in v1.1 · Glow &amp; Glory</span>
+              <h3>Every warrior, forged in light</h3>
+              <p>A brand-new rendering pipeline gives the carved pieces <b>real bloom glow</b> and a fresnel edge-light, so each army reads as a sculpted, radiant figure — never a flat tint.</p>
+              <p>Pick from <b>eleven Warrior Styles</b> — Divine Radiance, Blood &amp; Iron, Jade Warrior, Celestial Azure and more — each recolouring both armies in vivid, distinct hues that shimmer under the ✨ Glow effect.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- WARRIOR STYLES -->
+      <section>
+        <p class="eyebrow">Choose your colours</p>
+        <h2 class="h2">Warrior Styles</h2>
+        <p class="lead">Tap 🎨 in-game to recolour both armies. Glowing styles bloom with light; metal and stone finishes gleam with real reflections.</p>
+        <div class="styles">
+          <div class="style"><img src="img/hero.jpg" alt="Divine Radiance style" /><div class="cap"><span class="dot" style="color:#ffcf5a"></span><span class="nm">Divine Radiance</span><span class="gl">✨ glow</span></div></div>
+          <div class="style"><img src="img/style-blood.jpg" alt="Blood &amp; Iron style" /><div class="cap"><span class="dot" style="color:#ff5a3c"></span><span class="nm">Blood &amp; Iron</span><span class="gl">✨ glow</span></div></div>
+          <div class="style"><img src="img/style-jade.jpg" alt="Jade Warrior style" /><div class="cap"><span class="dot" style="color:#3ad686"></span><span class="nm">Jade Warrior</span><span class="gl">✨ glow</span></div></div>
+          <div class="style"><img src="img/style-celestial.jpg" alt="Celestial Azure style" /><div class="cap"><span class="dot" style="color:#4aa8ff"></span><span class="nm">Celestial Azure</span><span class="gl">✨ glow</span></div></div>
+          <div class="style"><img src="img/style-amethyst.jpg" alt="Royal Amethyst style" /><div class="cap"><span class="dot" style="color:#d24dff"></span><span class="nm">Royal Amethyst</span><span class="gl">✨ glow</span></div></div>
+          <div class="style"><img src="img/style-bronze.jpg" alt="Bronze &amp; Gold style" /><div class="cap"><span class="dot" style="color:#f4c667"></span><span class="nm">Bronze &amp; Gold</span><span class="gl">metal</span></div></div>
+        </div>
+      </section>
+
+      <hr class="divider" />
+
+      <!-- FEATURES -->
+      <section>
+        <p class="eyebrow">Not just a board — a teacher</p>
+        <h2 class="h2">What it is</h2>
         <div class="grid">
           <div class="card"><div class="ic">♟</div><h3>Authentic identities, modern moves</h3><p>Raja, Mantri, Ratha, Gaja, Ashva and Padati — the four-army host — move exactly like modern chess. Every piece carries a moral teaching.</p></div>
           <div class="card"><div class="ic">🧠</div><h3>A teaching AI, 5 levels</h3><p>Play the Guru from Padati to Mantri. An alpha-beta engine hints the best move and reviews your blunders — beatable at first, masterful at the top.</p></div>
           <div class="card"><div class="ic">📖</div><h3>Openings trainer</h3><p>Walk six classic openings move-by-move — Italian, Ruy López, Sicilian, French, Queen's Gambit, King's Indian — each narrated as a lesson in strategy.</p></div>
           <div class="card"><div class="ic">🔍</div><h3>Piece inspector</h3><p>Tap a piece to see a rotating 3D render of it and a diagram of exactly how it moves and captures.</p></div>
-          <div class="card"><div class="ic">👁</div><h3>Warrior's Eye</h3><p>Drop the camera to a piece's eye level and look across the battlefield from its perspective.</p></div>
-          <div class="card"><div class="ic">🌍</div><h3>Four themed worlds</h3><p>Kurukshetra, Lanka, Kalinga and Devāsura — each with its own two armies, board, teachings and cinematic intro, plus a 🎨 style system (radiant, jade, bronze…).</p></div>
-          <div class="card"><div class="ic">🎲</div><h3>3D or 2D</h3><p>Play in real-time carved 3D, or switch to a light, classic 2D board — same teaching AI, coach and narration either way.</p></div>
+          <div class="card"><div class="ic">👁</div><h3>Warrior's Eye</h3><p>Drop the camera to a piece's eye level and look across the battlefield from its very perspective.</p></div>
           <div class="card"><div class="ic">🎵</div><h3>Sound &amp; voice</h3><p>An Indian-classical soundscape — a tanpura drone and raga melody with crafted move/capture/check sounds — and every teaching read aloud in an expressive Indian-English DragonHD voice.</p></div>
         </div>
       </section>
 
+      <!-- WORLDS -->
       <section>
-        <h2>Four worlds, eight armies</h2>
-        <div class="worlds2" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
-          <figure class="shots" style="grid-template-columns:1fr"><img src="img/board.png" alt="Kurukshetra board" /><figcaption>Kurukshetra — the Mahabharata</figcaption></figure>
-          <figure class="shots" style="grid-template-columns:1fr"><img src="img/ramayana.png" alt="Ramayana — vanaras vs rakshasas" /><figcaption>Lanka — Rama's vanaras vs Ravana's rakshasas</figcaption></figure>
-          <figure class="shots" style="grid-template-columns:1fr"><img src="img/kalinga.png" alt="Kalinga — Ashoka's Mauryas vs Kalinga" /><figcaption>Kalinga — Ashoka's Mauryas vs the defenders</figcaption></figure>
-          <figure class="shots" style="grid-template-columns:1fr"><img src="img/devasura.png" alt="Devasura — glowing Devas vs Asuras" /><figcaption>Devāsura — radiant gods vs demons</figcaption></figure>
+        <p class="eyebrow">Four battles across the ages</p>
+        <h2 class="h2">Four worlds, eight armies</h2>
+        <p class="lead">Each world pits two <b>factually distinct</b> armies against each other — their own names, teachings, carved pieces and cinematic intro.</p>
+        <div class="worlds">
+          <div class="world"><img src="img/board.png" alt="Kurukshetra" /><div class="cap"><b>Kurukshetra</b><span>Pandavas vs Kauravas — the Mahābhārata</span></div></div>
+          <div class="world"><img src="img/ramayana.png" alt="Lanka" /><div class="cap"><b>Lanka</b><span>Rama's vanaras vs Ravana's rakshasas</span></div></div>
+          <div class="world"><img src="img/style-jade.jpg" alt="Kalinga" /><div class="cap"><b>Kalinga</b><span>Ashoka's Mauryas vs the defenders</span></div></div>
+          <div class="world"><img src="img/style-celestial.jpg" alt="Devasura" /><div class="cap"><b>Devāsura</b><span>Radiant Devas vs the Asuras</span></div></div>
         </div>
       </section>
 
+      <hr class="divider" />
+
+      <!-- SCREENS -->
       <section>
-        <h2>Screens</h2>
-        <div class="shots">
-          <figure><img src="img/lobby.png" alt="Lobby: choose world, mode, side and level" /><figcaption>Choose your battle</figcaption></figure>
-          <figure><img src="img/warriorseye.png" alt="Warrior's Eye piece-perspective view" /><figcaption>Warrior's Eye + piece inspector</figcaption></figure>
-          <figure><img src="img/mobile.png" alt="Mobile gameplay with coach hint" /><figcaption>On a phone, with the coach</figcaption></figure>
+        <p class="eyebrow">Two ways to play</p>
+        <h2 class="h2">3D grandeur, or a clean 2D board</h2>
+        <div class="screens">
+          <figure><img src="img/styles-picker.jpg" alt="Warrior Styles picker" /><figcaption>Pick a style from the palette</figcaption></figure>
+          <figure><img src="img/warriorseye.png" alt="Warrior's Eye and inspector" /><figcaption>Warrior's Eye + piece inspector</figcaption></figure>
+          <figure><img src="img/board2d.png" alt="2D board" /><figcaption>Or a light, classic 2D board</figcaption></figure>
         </div>
       </section>
 
-      <footer>
-        <p>Built by <a href="https://github.com/naveenneog">Naveen Gopalakrishna</a> ·
-          <a href="https://github.com/naveenneog/Chaturanga">Source on GitHub</a> ·
-          Licensed <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">PolyForm Noncommercial 1.0.0</a></p>
-        <p>Chess rules via chess.js · rendered with Three.js · pieces reconstructed with Hunyuan3D-2 · intros by Azure Sora-2.</p>
-      </footer>
+      <!-- FOOTER CTA -->
+      <section>
+        <div class="foot-cta">
+          <h2 class="h2">Step onto the field of dharma</h2>
+          <p class="lead">No sign-in. No download required to play. Just open and learn.</p>
+          <div class="cta">
+            <a class="btn play" href="setup.html">⚔ Play now</a>
+            <a class="btn dl" href="https://github.com/naveenneog/Chaturanga/releases/latest">⬇ Get the Android app</a>
+          </div>
+        </div>
+      </section>
     </div>
+
+    <footer>
+      <p>Built by <a href="https://github.com/naveenneog">Naveen Gopalakrishna</a> ·
+        <a href="https://github.com/naveenneog/Chaturanga">Source on GitHub</a> ·
+        Licensed <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">PolyForm Noncommercial 1.0.0</a></p>
+      <p>Chess rules via chess.js · rendered with Three.js + bloom · pieces reconstructed with Hunyuan3D-2 · intros by Azure Sora-2 · narration by Azure DragonHD.</p>
+    </footer>
   </body>
 </html>

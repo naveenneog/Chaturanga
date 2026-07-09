@@ -9,7 +9,7 @@
   Prereqs: JDK 21 (Eclipse Adoptium), Android SDK (platforms 34/35), Node/npm.
   Usage:  powershell -File tooling\build_apk.ps1 [-Version 1.0.0]
 #>
-param([string]$Version = "1.0.0")
+param([string]$Version = "1.1.0")
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
@@ -44,6 +44,10 @@ function Write-NoBom([string]$path, [string]$text) {
 }
 $g = (Get-Content $gradle -Raw).TrimStart([char]0xFEFF)
 $g = [regex]::Replace($g, 'versionName "[^"]*"', ('versionName "{0}"' -f $Version))
+# Derive a monotonic integer versionCode from the semver (1.1.0 -> 10100) so upgrades install over old builds
+$vp = $Version.Split('.')
+$vcode = [int]$vp[0] * 10000 + [int]$vp[1] * 100 + [int]$vp[2]
+$g = [regex]::Replace($g, 'versionCode \d+', ('versionCode {0}' -f $vcode))
 # Ensure the release build is signed with the debug key (idempotent)
 if ($g -notmatch "signingConfig signingConfigs.getByName\('debug'\)") {
   $g = $g -replace "(release\s*\{)", "`$1`r`n            signingConfig signingConfigs.getByName('debug')"
