@@ -74,6 +74,21 @@
       #more.show { display: flex; }
       #more button { justify-content: flex-start; width: 100%; }
       #hud button.on, #more button.on { background: linear-gradient(180deg,#ffcf7a,#e8a33d); color: #241200; border-color: transparent; }
+      /* Warrior-style picker */
+      #stylePanel { position: fixed; inset: 0; z-index: 92; display: none; align-items: center; justify-content: center; background: rgba(8,4,2,.72); padding: 1rem; }
+      #stylePanel.show { display: flex; }
+      #stylePanel .sp-card { width: min(560px, 96vw); max-height: 86vh; overflow: auto; background: linear-gradient(180deg,#20130a,#160c06); border: 1px solid rgba(232,163,61,.45); border-radius: 16px; padding: 1rem 1rem 1.2rem; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+      #stylePanel .sp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .2rem; }
+      #stylePanel .sp-head h3 { margin: 0; font-size: 1.05rem; color: #ffd98a; letter-spacing: .3px; }
+      #stylePanel .sp-sub { margin: .1rem 0 .8rem; font-size: .78rem; color: #c7a877; }
+      #spClose { font: inherit; font-size: 1.1rem; line-height: 1; color: #f4e6cd; background: rgba(255,255,255,.06); border: 1px solid rgba(232,163,61,.4); border-radius: 8px; width: 34px; height: 34px; cursor: pointer; }
+      #spGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .55rem; }
+      .sp-item { display: flex; align-items: center; gap: .55rem; padding: .5rem .55rem; background: rgba(255,255,255,.04); border: 1px solid rgba(232,163,61,.28); border-radius: 12px; cursor: pointer; color: #f4e6cd; font-size: .82rem; text-align: left; transition: border-color .15s, background .15s, transform .1s; }
+      .sp-item:hover { background: rgba(255,255,255,.08); transform: translateY(-1px); }
+      .sp-item.active { border-color: #ffcf7a; background: linear-gradient(180deg, rgba(255,207,122,.18), rgba(232,163,61,.08)); box-shadow: 0 0 0 1px rgba(255,207,122,.4) inset; }
+      .sp-swatch { flex: 0 0 auto; width: 40px; height: 26px; border-radius: 7px; border: 1px solid rgba(255,255,255,.25); box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+      .sp-name { flex: 1 1 auto; }
+      .sp-glow { flex: 0 0 auto; font-size: .7rem; color: #ffd98a; opacity: .9; }
       .modal { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; background: rgba(8,4,2,.74); padding: 1rem; }
       .modal.show { display: flex; }
       .modal .sheet { width: min(92vw, 420px); background: linear-gradient(180deg,#2a1608,#160c05); border: 1px solid rgba(232,163,61,.5); border-radius: 18px; padding: 1.3rem; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,.6); }
@@ -152,12 +167,20 @@
       <div id="more">
         <button id="viewBtn" aria-label="Change camera view">🎥 <span id="viewName">Sitting</span></button>
         <button id="eyeBtn" aria-label="Warrior's Eye piece-perspective view">👁 <span>Eye</span></button>
-        <button id="styleBtn" aria-label="Change piece style">🎨 <span id="styleName">Themed</span></button>
+        <button id="styleBtn" aria-label="Choose warrior style">🎨 <span id="styleName">Themed</span></button>
+        <button id="glowBtn" aria-label="Toggle glow" class="on">✨ Glow</button>
         <button id="flipBtn" aria-label="Flip the board">⇅ Flip</button>
         <button id="autoflipBtn" aria-label="Auto-flip each turn (2-player)">⟳ Auto-flip</button>
         <button id="musicBtn" aria-label="Toggle background music">🎵 Music</button>
         <button id="soundBtn" aria-label="Toggle sound effects">🔔 Sounds</button>
         <button id="muteBtn" aria-label="Read aloud on or off">🔊 Voice</button>
+      </div>
+    </div>
+    <div id="stylePanel" role="dialog" aria-modal="true" aria-label="Warrior styles">
+      <div class="sp-card">
+        <div class="sp-head"><h3>⚔ Warrior Styles</h3><button id="spClose" aria-label="Close styles">✕</button></div>
+        <p class="sp-sub">Choose a colour &amp; glow for your armies. Glowing styles shine with the ✨ Glow effect on.</p>
+        <div id="spGrid"></div>
       </div>
     </div>
     <script type="module" src="js/board3d.js"></script>

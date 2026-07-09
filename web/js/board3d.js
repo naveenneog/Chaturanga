@@ -3,6 +3,10 @@
 // revealed and read aloud on select / capture / promotion. Local hotseat.
 import * as THREE from '../vendor/three.module.js';
 import { GLTFLoader } from '../vendor/GLTFLoader.js';
+import { EffectComposer } from '../vendor/EffectComposer.js';
+import { RenderPass } from '../vendor/RenderPass.js';
+import { UnrealBloomPass } from '../vendor/UnrealBloomPass.js';
+import { OutputPass } from '../vendor/OutputPass.js';
 import { newGame, TYPE_TO_KEY, selectMoment, moveMoment, sidePieces } from './rules.js';
 import { makePiece } from './pieces3d.js';
 import { bestMove as bestMoveMain, LEVELS, levelById } from './engine.js';
@@ -116,7 +120,25 @@ async function main() {
     key.shadow.normalBias = 0.035;
   }
   scene.add(key);
+  // rim / back light — carves a glowing edge onto the pieces so they read with depth and "glory"
+  const rim = new THREE.DirectionalLight(hexInt(T.accent || '#ffd9a0'), 0.9);
+  rim.position.set(-6, 6, -7.5);
+  scene.add(rim);
   scene.add(new THREE.AmbientLight(hexInt(T.panel || '#241308'), 0.55));
+
+  // ---------- bloom (real emissive glow) ----------
+  // A post-processing chain: render the scene, add an UnrealBloom halo around bright/emissive
+  // pixels, then tone-map + colour-manage via OutputPass. Only strongly-emissive pieces (the glow
+  // Warrior Styles) cross the threshold, so the board itself stays crisp. Toggle: '#glowBtn'.
+  const composer = new EffectComposer(renderer);
+  composer.setPixelRatio(Math.min(devicePixelRatio || 1, MOBILE ? 1.5 : 2));
+  composer.setSize(innerWidth, innerHeight);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.62, 0.6, 0.86);
+  composer.addPass(bloomPass);
+  composer.addPass(new OutputPass());
+  let glowOn = true;
+  try { const g = localStorage.getItem('chaturanga_glow'); if (g === '0') glowOn = false; } catch { /* ignore */ }
 
   const boardGroup = new THREE.Group();
   scene.add(boardGroup);
@@ -232,35 +254,44 @@ async function main() {
   // and sets roughness/metalness/emissive so an army can read as ivory, jade, bronze, or radiant.
   const hx = (h, d) => new THREE.Color(hexInt(h || d));
   const DEFAULT_STYLE = {
-    white: { tint: '#fff6e2', roughness: 0.42, metalness: 0.04, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.05, clearcoat: 0.4 },
-    black: { tint: '#4a3120', roughness: 0.46, metalness: 0.06, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.0, clearcoat: 0.5 },
+    white: { tint: '#fff6e2', roughness: 0.40, metalness: 0.06, emissive: '#4a3414', emissiveIntensity: 0.30, envMapIntensity: 1.20, clearcoat: 0.45 },
+    black: { tint: '#5c3a20', roughness: 0.44, metalness: 0.10, emissive: '#3a1606', emissiveIntensity: 0.28, envMapIntensity: 1.10, clearcoat: 0.50 },
   };
-  // Finishes & glows the player can cycle. `emissive` (army-coloured, additive) is the strongest,
-  // most visible lever — it makes BOTH armies glow, even the near-black one, where a multiplied
-  // tint alone can never show. metalness/roughness/clearcoat/envMapIntensity vary the surface finish.
+  // Warrior Styles the player picks from a palette. `emissive` (army-coloured, additive) is the
+  // strongest lever — with the bloom pass it makes BOTH armies GLOW, even the near-black one, where
+  // a multiplied tint alone can never show. `swatch` = the two chips shown in the style picker.
   const STYLE_PRESETS = [
-    { name: 'Themed', themed: true },
-    { name: 'Ivory & Ebony',
+    { name: 'Themed', themed: true, swatch: [T.whiteArmy || '#efe4c8', T.blackArmy || '#3a2418'] },
+    { name: 'Ivory & Ebony', swatch: ['#efe4c8', '#241812'],
       white: { tint: '#efe4c8', roughness: 0.40, metalness: 0.0, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.10, clearcoat: 0.5 },
       black: { tint: '#241812', roughness: 0.34, metalness: 0.05, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.0, clearcoat: 0.6 } },
-    { name: 'Bronze & Gold',            // polished metal — strong reflections
-      white: { tint: '#f4c667', roughness: 0.26, metalness: 0.92, emissive: '#241400', emissiveIntensity: 0.14, envMapIntensity: 1.8, clearcoat: 0.2 },
-      black: { tint: '#8a5a24', roughness: 0.32, metalness: 0.96, emissive: '#160c00', emissiveIntensity: 0.12, envMapIntensity: 1.7, clearcoat: 0.2 } },
-    { name: 'Jade & Onyx',              // polished stone with a soft inner glow
-      white: { tint: '#a8e6c4', roughness: 0.18, metalness: 0.15, emissive: '#0f4a2c', emissiveIntensity: 0.40, envMapIntensity: 1.4, clearcoat: 0.85 },
-      black: { tint: '#274b42', roughness: 0.16, metalness: 0.20, emissive: '#0a3326', emissiveIntensity: 0.42, envMapIntensity: 1.3, clearcoat: 0.9 } },
-    { name: 'Ember Glow',               // fiery, high emissive
-      white: { tint: '#ffd9a0', roughness: 0.45, metalness: 0.10, emissive: '#ff7a1a', emissiveIntensity: 0.85, envMapIntensity: 1.1, clearcoat: 0.3 },
-      black: { tint: '#c23a24', roughness: 0.42, metalness: 0.14, emissive: '#ff2410', emissiveIntensity: 0.80, envMapIntensity: 1.0, clearcoat: 0.3 } },
-    { name: 'Celestial',                // cool blue / violet radiance, metallic sheen
-      white: { tint: '#c4dcff', roughness: 0.25, metalness: 0.40, emissive: '#2a6bff', emissiveIntensity: 0.70, envMapIntensity: 1.5, clearcoat: 0.7 },
-      black: { tint: '#8a6cff', roughness: 0.24, metalness: 0.45, emissive: '#6a2aff', emissiveIntensity: 0.75, envMapIntensity: 1.4, clearcoat: 0.75 } },
-    { name: 'Sandal & Rosewood',        // warm matte carved wood
-      white: { tint: '#e8c89a', roughness: 0.64, metalness: 0.0, emissive: '#2a1200', emissiveIntensity: 0.10, envMapIntensity: 0.8, clearcoat: 0.2 },
-      black: { tint: '#3a241a', roughness: 0.58, metalness: 0.0, emissive: '#180a00', emissiveIntensity: 0.10, envMapIntensity: 0.75, clearcoat: 0.25 } },
-    { name: 'Pearl & Obsidian',         // glossy, high clearcoat
-      white: { tint: '#f5efe6', roughness: 0.12, metalness: 0.10, emissive: '#14140f', emissiveIntensity: 0.12, envMapIntensity: 1.7, clearcoat: 1.0 },
-      black: { tint: '#16161e', roughness: 0.10, metalness: 0.22, emissive: '#0a0a18', emissiveIntensity: 0.18, envMapIntensity: 1.6, clearcoat: 1.0 } },
+    { name: 'Divine Radiance', glow: true, swatch: ['#ffd75e', '#b46cff'],
+      white: { tint: '#ffe9b0', roughness: 0.34, metalness: 0.25, emissive: '#ffb020', emissiveIntensity: 1.05, envMapIntensity: 1.5, clearcoat: 0.6 },
+      black: { tint: '#c9a6ff', roughness: 0.30, metalness: 0.30, emissive: '#8a2bff', emissiveIntensity: 1.20, envMapIntensity: 1.4, clearcoat: 0.7 } },
+    { name: 'Blood & Iron', glow: true, swatch: ['#ff5a3c', '#c01818'],
+      white: { tint: '#ffcaa8', roughness: 0.36, metalness: 0.45, emissive: '#ff4a1e', emissiveIntensity: 0.95, envMapIntensity: 1.5, clearcoat: 0.4 },
+      black: { tint: '#7a2418', roughness: 0.34, metalness: 0.55, emissive: '#e01212', emissiveIntensity: 1.15, envMapIntensity: 1.3, clearcoat: 0.4 } },
+    { name: 'Jade Warrior', glow: true, swatch: ['#57e39a', '#11a67e'],
+      white: { tint: '#b7f0d0', roughness: 0.20, metalness: 0.20, emissive: '#1fbf6e', emissiveIntensity: 0.95, envMapIntensity: 1.5, clearcoat: 0.85 },
+      black: { tint: '#124a3c', roughness: 0.18, metalness: 0.28, emissive: '#0bd08a', emissiveIntensity: 1.10, envMapIntensity: 1.3, clearcoat: 0.9 } },
+    { name: 'Ember Forge', glow: true, swatch: ['#ff9a2e', '#ff3b12'],
+      white: { tint: '#ffdca6', roughness: 0.42, metalness: 0.15, emissive: '#ff8a1a', emissiveIntensity: 1.15, envMapIntensity: 1.2, clearcoat: 0.3 },
+      black: { tint: '#3a1c12', roughness: 0.40, metalness: 0.20, emissive: '#ff2e08', emissiveIntensity: 1.25, envMapIntensity: 1.1, clearcoat: 0.3 } },
+    { name: 'Celestial Azure', glow: true, swatch: ['#4aa8ff', '#7b48ff'],
+      white: { tint: '#bfe0ff', roughness: 0.26, metalness: 0.40, emissive: '#2f7bff', emissiveIntensity: 1.00, envMapIntensity: 1.6, clearcoat: 0.7 },
+      black: { tint: '#4632a0', roughness: 0.24, metalness: 0.45, emissive: '#6a2aff', emissiveIntensity: 1.20, envMapIntensity: 1.4, clearcoat: 0.75 } },
+    { name: 'Emerald & Ruby', glow: true, swatch: ['#22d36a', '#ff2a56'],
+      white: { tint: '#9ff0bd', roughness: 0.24, metalness: 0.30, emissive: '#12c257', emissiveIntensity: 1.00, envMapIntensity: 1.5, clearcoat: 0.8 },
+      black: { tint: '#5a0f22', roughness: 0.22, metalness: 0.35, emissive: '#ff1442', emissiveIntensity: 1.15, envMapIntensity: 1.4, clearcoat: 0.85 } },
+    { name: 'Royal Amethyst', glow: true, swatch: ['#e06bff', '#7a2ad6'],
+      white: { tint: '#f0c4ff', roughness: 0.28, metalness: 0.30, emissive: '#d23bff', emissiveIntensity: 1.00, envMapIntensity: 1.5, clearcoat: 0.8 },
+      black: { tint: '#3a1466', roughness: 0.26, metalness: 0.38, emissive: '#7a1ee0', emissiveIntensity: 1.15, envMapIntensity: 1.3, clearcoat: 0.85 } },
+    { name: 'Bronze & Gold', swatch: ['#f4c667', '#8a5a24'],   // metallic finish
+      white: { tint: '#f4c667', roughness: 0.26, metalness: 0.95, emissive: '#3a2200', emissiveIntensity: 0.25, envMapIntensity: 1.9, clearcoat: 0.2 },
+      black: { tint: '#8a5a24', roughness: 0.32, metalness: 0.98, emissive: '#241400', emissiveIntensity: 0.22, envMapIntensity: 1.7, clearcoat: 0.2 } },
+    { name: 'Pearl & Obsidian', swatch: ['#f5efe6', '#16161e'],  // glossy finish
+      white: { tint: '#f5efe6', roughness: 0.10, metalness: 0.12, emissive: '#20201a', emissiveIntensity: 0.18, envMapIntensity: 1.8, clearcoat: 1.0 },
+      black: { tint: '#16161e', roughness: 0.08, metalness: 0.25, emissive: '#12122a', emissiveIntensity: 0.28, envMapIntensity: 1.7, clearcoat: 1.0 } },
   ];
   let styleIdx = 0;
   try { const s = +localStorage.getItem('chaturanga_style'); if (s >= 0 && s < STYLE_PRESETS.length) styleIdx = s; } catch { /* ignore */ }
@@ -725,7 +756,7 @@ async function main() {
     lx = e.clientX; ly = e.clientY;
   });
   el.addEventListener('wheel', (e) => { e.preventDefault(); cam.radius = Math.max(6, Math.min(30, cam.radius + Math.sign(e.deltaY) * 1)); }, { passive: false });
-  addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); if (!camTween) cam.radius = fitRadius(cam.baseRadius); });
+  addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); bloomPass.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); if (!camTween) cam.radius = fitRadius(cam.baseRadius); });
 
   // ---------- piece inspector: a small rotating render + movement diagram ----------
   let insp = null;
@@ -811,13 +842,36 @@ async function main() {
   $('#undoBtn')?.addEventListener('click', undo);
   $('#viewBtn').addEventListener('click', () => { eyeMode = false; $('#eyeBtn')?.classList.remove('on'); presetIdx = (presetIdx + 1) % PRESETS.length; $('#viewName').textContent = PRESETS[presetIdx].name; applyPreset(PRESETS[presetIdx]); });
   $('#flipBtn').addEventListener('click', () => { flip = !flip; applyPreset(PRESETS[presetIdx]); });
-  $('#styleBtn')?.addEventListener('click', () => {
-    styleIdx = (styleIdx + 1) % STYLE_PRESETS.length;
+  // ---------- Warrior-style picker ----------
+  function applyStyleIdx(i) {
+    styleIdx = ((i % STYLE_PRESETS.length) + STYLE_PRESETS.length) % STYLE_PRESETS.length;
     try { localStorage.setItem('chaturanga_style', styleIdx); } catch { /* ignore */ }
     $('#styleName').textContent = STYLE_PRESETS[styleIdx].name;
     syncPieces();
     if (selected) { const p = game.get(selected.square); if (p) inspectPiece(p.type, p.color); }
-  });
+    buildStyleGrid();
+  }
+  function buildStyleGrid() {
+    const grid = $('#spGrid'); if (!grid) return;
+    grid.innerHTML = STYLE_PRESETS.map((s, i) => {
+      const sw = s.swatch || [T.whiteArmy || '#efe4c8', T.blackArmy || '#3a2418'];
+      const g = s.glow ? '<span class="sp-glow">✨</span>' : '';
+      return `<button class="sp-item ${i === styleIdx ? 'active' : ''}" data-i="${i}" aria-label="${s.name}">`
+        + `<span class="sp-swatch" style="background:linear-gradient(135deg,${sw[0]} 0 50%,${sw[1]} 50% 100%)"></span>`
+        + `<span class="sp-name">${s.name}</span>${g}</button>`;
+    }).join('');
+    grid.querySelectorAll('.sp-item').forEach((b) => b.addEventListener('click', () => { audio.sfx('ui'); applyStyleIdx(+b.dataset.i); }));
+  }
+  const stylePanel = $('#stylePanel');
+  function openStylePanel() { buildStyleGrid(); stylePanel?.classList.add('show'); $('#more')?.classList.remove('show'); }
+  function closeStylePanel() { stylePanel?.classList.remove('show'); }
+  $('#styleBtn')?.addEventListener('click', openStylePanel);
+  $('#spClose')?.addEventListener('click', closeStylePanel);
+  stylePanel?.addEventListener('click', (e) => { if (e.target === stylePanel) closeStylePanel(); });
+  // glow (bloom) toggle
+  function reflectGlow() { const b = $('#glowBtn'); if (b) { b.classList.toggle('on', glowOn); b.innerHTML = glowOn ? '✨ Glow' : '✨̶ Glow off'; } }
+  $('#glowBtn')?.addEventListener('click', () => { glowOn = !glowOn; try { localStorage.setItem('chaturanga_glow', glowOn ? '1' : '0'); } catch { /* ignore */ } reflectGlow(); });
+  reflectGlow();
   $('#autoflipBtn')?.addEventListener('click', () => {
     autoFlip = !autoFlip; $('#autoflipBtn').classList.toggle('on', autoFlip);
     if (autoFlip && MODE === 'hotseat') { flip = game.turn() === 'b'; applyPreset(PRESETS[presetIdx]); }
@@ -864,7 +918,7 @@ async function main() {
     selRing.material.opacity = 0.55 + Math.sin(t * 4) * 0.25;
     selRing.rotation.z = t * 0.6;
     if (checkRing.visible) { checkRing.material.opacity = 0.6 + Math.sin(t * 6) * 0.35; checkRing.rotation.z = -t * 0.8; }
-    renderer.render(scene, camera);
+    if (glowOn) composer.render(); else renderer.render(scene, camera);
     if (insp && $('#inspector')?.classList.contains('show')) { insp.holder.rotation.y = t * 0.9; insp.r.render(insp.sc, insp.cm); }
   }
   renderer.setAnimationLoop(loop);
