@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Chaturanga — 2D</title>
+    <meta name="theme-color" content="#1a0f08" />
+    <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+    <style>
+      :root { --bg:#1a0f08; --accent:#e8a33d; --text:#f4e6cd; --muted:#b79b74; --light:#d9b98a; --dark:#6b4423; --wa:#efe4c8; --ba:#3a2418; }
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: Georgia, 'Noto Serif', serif; -webkit-text-size-adjust: 100%; }
+      button, select, a { touch-action: manipulation; font-family: inherit; }
+      nav { position: fixed; top: .5rem; left: .5rem; z-index: 70; display: flex; gap: .3rem; margin-top: env(safe-area-inset-top,0); }
+      nav a { font-size: .78rem; color: var(--text); background: rgba(0,0,0,.42); border: 1px solid rgba(232,163,61,.35); border-radius: 8px; padding: .3rem .55rem; text-decoration: none; min-height: 38px; display: inline-flex; align-items: center; }
+      header { text-align: center; padding: calc(.6rem + env(safe-area-inset-top,0)) 3.5rem .2rem; }
+      #title { font-size: 1.15rem; letter-spacing: .05em; color: var(--accent); text-shadow: 0 0 18px rgba(232,163,61,.5); }
+      #status { font-size: .92rem; color: #d9c39c; min-height: 1.2em; }
+      #turn { display: flex; justify-content: center; gap: .5rem; margin-top: .25rem; }
+      .side { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; padding: .22rem .6rem; border-radius: 999px; background: rgba(0,0,0,.4); border: 1px solid rgba(232,163,61,.28); }
+      .side.on { border-color: var(--accent); box-shadow: 0 0 12px rgba(232,163,61,.4); color: #ffe6bb; }
+      .dot { width: 11px; height: 11px; border-radius: 50%; }
+      #opening { text-align: center; font-size: .72rem; color: #ffe6bb; opacity: 0; transition: opacity .3s; min-height: 1em; margin-top: .2rem; }
+      #opening.show { opacity: 1; }
+      #captured { display: flex; flex-direction: column; align-items: center; gap: 1px; margin-top: .2rem; min-height: 30px; }
+      .captray { display: flex; gap: 1px; font-size: 15px; line-height: 1.1; min-height: 14px; }
+      main { display: flex; flex-direction: column; align-items: center; padding: .3rem; }
+      #boardWrap { position: relative; width: min(94vw, 74vh, 560px); aspect-ratio: 1; }
+      #board { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); border-radius: 10px; overflow: hidden; box-shadow: 0 14px 40px rgba(0,0,0,.55), 0 0 0 6px var(--dark), 0 0 0 8px var(--accent); }
+      .sq { position: relative; display: flex; align-items: center; justify-content: center; }
+      .sq.lite { background: var(--light); } .sq.drk { background: var(--dark); }
+      .sq .coord { position: absolute; bottom: 1px; right: 2px; font-size: .48rem; opacity: .45; color: #000; pointer-events: none; }
+      .pc { position: absolute; width: 12.5%; height: 12.5%; display: flex; align-items: center; justify-content: center; font-size: min(9vw, 7vh, 52px); line-height: 1; cursor: pointer; transition: left .28s cubic-bezier(.4,1.3,.5,1), top .28s cubic-bezier(.4,1.3,.5,1), transform .15s, opacity .3s; z-index: 5; user-select: none; will-change: left, top; }
+      .pc img { width: 96%; height: 96%; object-fit: contain; filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); pointer-events: none; }
+      .pc .glyph { text-shadow: 0 2px 3px rgba(0,0,0,.55), 0 0 2px rgba(0,0,0,.4); }
+      .pc.w .glyph { color: var(--wa); } .pc.b .glyph { color: var(--ba); -webkit-text-stroke: 1.5px rgba(255,230,190,.35); }
+      .pc.sel { transform: scale(1.12); z-index: 8; }
+      .pc.b img { filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)) brightness(.42) sepia(.5) saturate(1.4) hue-rotate(-8deg); }
+      .mk { position: absolute; width: 12.5%; height: 12.5%; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 3; }
+      .mk .dot2 { width: 30%; height: 30%; border-radius: 50%; background: var(--accent); opacity: .72; }
+      .mk.cap .dot2 { width: 78%; height: 78%; background: transparent; border: 3px solid #ff5c5c; border-radius: 50%; opacity: .85; }
+      .sq.selsq { box-shadow: inset 0 0 0 3px var(--accent); }
+      .sq.chk { box-shadow: inset 0 0 0 4px #ff4444; animation: pulse 1s infinite; }
+      @keyframes pulse { 0%,100%{ box-shadow: inset 0 0 0 3px #ff4444; } 50%{ box-shadow: inset 0 0 0 5px #ff6b6b; } }
+      #panel { width: min(94vw, 560px); margin-top: .5rem; display: none; gap: .7rem; align-items: center; background: linear-gradient(180deg,#2a1608,#180d05); border: 1px solid rgba(232,163,61,.4); border-radius: 14px; padding: .6rem .8rem; }
+      #panel.show { display: flex; }
+      #pGrid { display: grid; grid-template-columns: repeat(5,10px); gap: 2px; flex: 0 0 auto; }
+      #pGrid i { width: 10px; height: 10px; border-radius: 2px; background: rgba(255,255,255,.08); }
+      #pGrid i.mv,#pGrid i.move { background: var(--accent); } #pGrid i.cap { background: #c0392b; } #pGrid i.me { background: var(--wa); box-shadow: 0 0 0 1px var(--accent) inset; }
+      #pText { flex: 1; } #pName { font-size: 1.05rem; color: #ffe6bb; margin: 0; } #pDharma { font-size: .82rem; color: var(--muted); margin: .15rem 0 0; line-height: 1.4; }
+      #coach { position: fixed; left: 50%; top: 3.4rem; transform: translateX(-50%) translateY(-8px); width: min(92vw,440px); background: linear-gradient(180deg,#21304a,#141d2e); border: 1px solid rgba(120,170,255,.4); border-radius: 12px; padding: .55rem .85rem; font-size: .88rem; line-height: 1.4; color: #dce7ff; box-shadow: 0 12px 30px rgba(0,0,0,.5); opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; z-index: 62; }
+      #coach.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+      #coach.warn { background: linear-gradient(180deg,#4a2320,#2a1310); border-color: rgba(255,120,100,.5); color: #ffdcd4; }
+      #coach.nudge { background: linear-gradient(180deg,#234a30,#12261a); border-color: rgba(120,255,160,.4); color: #d6ffe2; }
+      #hud { display: flex; gap: .5rem; align-items: center; justify-content: center; flex-wrap: wrap; padding: .7rem; padding-bottom: calc(.7rem + env(safe-area-inset-bottom,0)); }
+      #hud button, #hud select, #hud a.btn { font-size: .95rem; color: var(--text); background: rgba(255,255,255,.06); border: 1px solid rgba(232,163,61,.4); border-radius: 12px; padding: .6rem .9rem; cursor: pointer; min-height: 44px; display: inline-flex; align-items: center; gap: .3rem; text-decoration: none; }
+      #hud button:disabled { opacity: .4; } #hud button.on { background: linear-gradient(180deg,#ffcf7a,#e8a33d); color: #241200; border-color: transparent; }
+      #hud select option { color: #111; }
+      #trainer { display: none; gap: .4rem; align-items: center; justify-content: center; margin-top: .3rem; }
+      #trainer.show { display: flex; } #trainer button { font-size: .82rem; color: var(--text); background: rgba(0,0,0,.5); border: 1px solid rgba(232,163,61,.4); border-radius: 8px; padding: .35rem .6rem; min-height: 34px; }
+      .modal { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; background: rgba(8,4,2,.74); padding: 1rem; }
+      .modal.show { display: flex; }
+      .sheet { width: min(92vw,420px); background: linear-gradient(180deg,#2a1608,#160c05); border: 1px solid rgba(232,163,61,.5); border-radius: 18px; padding: 1.3rem; text-align: center; }
+      .sheet h2,.sheet h3 { color: #ffe6bb; margin: .2rem 0 .8rem; } .sheet .m { color: #f0e2c6; line-height: 1.5; }
+      #promoRow { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; }
+      #promoRow button { font-size: 1.9rem; width: 64px; height: 72px; border-radius: 12px; border: 1px solid rgba(232,163,61,.4); background: rgba(255,255,255,.06); color: var(--text); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      #promoRow button small { font-size: .5rem; }
+      .orow { display: flex; gap: .6rem; justify-content: center; margin-top: 1rem; }
+      .orow button, .orow a { font-size: 1rem; color: #241200; background: linear-gradient(180deg,#ffcf7a,#e8a33d); border: 0; border-radius: 12px; padding: .7rem 1.1rem; cursor: pointer; text-decoration: none; min-height: 46px; display: inline-flex; align-items: center; }
+      .orow a.alt { background: rgba(255,255,255,.08); color: var(--text); border: 1px solid rgba(232,163,61,.4); }
+    </style>
+  </head>
+  <body>
+    <nav><a href="setup.html" id="lobbyLink">⚙ Lobby</a></nav>
+    <header>
+      <div id="title">Chaturanga</div>
+      <div id="status">White to move</div>
+      <div id="turn"></div>
+      <div id="opening"></div>
+      <div id="captured"><div id="capB" class="captray"></div><div id="capW" class="captray"></div></div>
+    </header>
+    <div id="coach"></div>
+    <main>
+      <div id="boardWrap"><div id="board"></div></div>
+      <div id="panel"><div id="pGrid"></div><div id="pText"><p id="pName"></p><p id="pDharma"></p></div></div>
+      <div id="trainer"><span id="trStep"></span><button id="trPause">⏸ Pause</button><button id="trExit">✕ Exit</button></div>
+    </main>
+    <div id="promo" class="modal" role="dialog" aria-modal="true"><div class="sheet"><h3>Promote the Padati</h3><div id="promoRow"></div></div></div>
+    <div id="over" class="modal" role="dialog" aria-modal="true"><div class="sheet"><h2 id="overTitle"></h2><p id="overLine" class="m"></p><div class="orow"><button id="overNew">↻ Play again</button><a class="alt" id="overLobby" href="setup.html">⚙ Lobby</a></div></div></div>
+    <div id="hud">
+      <button id="newBtn" aria-label="New game">↻ New</button>
+      <button id="undoBtn" aria-label="Undo" disabled>↶ Undo</button>
+      <button id="hintBtn" aria-label="Hint">💡 Hint</button>
+      <select id="worldSel" aria-label="World"></select>
+      <button id="flipBtn" aria-label="Flip board">⇅ Flip</button>
+      <button id="musicBtn" aria-label="Music">🎵</button>
+      <button id="soundBtn" aria-label="Sounds">🔔</button>
+      <button id="muteBtn" aria-label="Voice">🔊</button>
+      <a class="btn" id="to3d" href="play.html" aria-label="Switch to 3D">🎲 3D</a>
+    </div>
+    <script type="module" src="js/board2d.js"></script>
+  </body>
+</html>

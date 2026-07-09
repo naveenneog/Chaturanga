@@ -28,7 +28,7 @@ function cellFromXZ(x, z) {
   return (col >= 0 && col < 8 && row >= 0 && row < 8) ? { col, row, square: squareName(col, row) } : null;
 }
 
-const WORLDS = [['kurukshetra', 'Kurukshetra'], ['ramayana', 'Ramayana · Lanka']];
+const WORLDS = [['kurukshetra', 'Kurukshetra'], ['ramayana', 'Ramayana · Lanka'], ['kalinga', 'Kalinga · Ashoka'], ['devasura', 'Devas & Asuras']];
 
 async function main() {
   const params = new URLSearchParams(location.search);
@@ -226,22 +226,45 @@ async function main() {
     if (key === 'gaja') return w ? 0 : Math.PI;
     return w ? 0 : Math.PI;
   };
-  // ivory (white army) shows the baked concept texture as-is; dark army multiplies
-  // it toward rosewood so the carved detail survives as dark wood.
-  const IVORY = new THREE.Color(0xffffff);
-  const ROSEWOOD = new THREE.Color(0x4a3120);
+  // ---------- piece material styles ----------
+  // A world may define its own themed style (world.pieceStyle.{white,black}); the player can also
+  // cycle a set of preset materials. Each style multiplies the baked concept texture toward a tint
+  // and sets roughness/metalness/emissive so an army can read as ivory, jade, bronze, or radiant.
+  const hx = (h, d) => new THREE.Color(hexInt(h || d));
+  const DEFAULT_STYLE = {
+    white: { tint: '#fff6e2', roughness: 0.42, metalness: 0.04, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.05, clearcoat: 0.4 },
+    black: { tint: '#4a3120', roughness: 0.46, metalness: 0.06, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.0, clearcoat: 0.5 },
+  };
+  const STYLE_PRESETS = [
+    { name: 'Themed', themed: true },
+    { name: 'Ivory & Ebony', white: { tint: '#efe4c8', roughness: 0.34, metalness: 0.0, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.1, clearcoat: 0.5 }, black: { tint: '#241812', roughness: 0.3, metalness: 0.05, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.0, clearcoat: 0.6 } },
+    { name: 'Jade & Onyx', white: { tint: '#bfe6cf', roughness: 0.22, metalness: 0.12, emissive: '#06140d', emissiveIntensity: 0.15, envMapIntensity: 1.3, clearcoat: 0.7 }, black: { tint: '#1b2a28', roughness: 0.18, metalness: 0.18, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.2, clearcoat: 0.8 } },
+    { name: 'Bronze & Iron', white: { tint: '#d0a25f', roughness: 0.34, metalness: 0.75, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.3, clearcoat: 0.15 }, black: { tint: '#3a3a42', roughness: 0.4, metalness: 0.82, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.2, clearcoat: 0.15 } },
+    { name: 'Marble & Slate', white: { tint: '#ece7db', roughness: 0.52, metalness: 0.0, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 0.8, clearcoat: 0.3 }, black: { tint: '#2f333b', roughness: 0.5, metalness: 0.06, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 0.8, clearcoat: 0.3 } },
+  ];
+  let styleIdx = 0;
+  try { const s = +localStorage.getItem('chaturanga_style'); if (s >= 0 && s < STYLE_PRESETS.length) styleIdx = s; } catch { /* ignore */ }
+  function styleFor(color) {
+    const preset = STYLE_PRESETS[styleIdx];
+    const side = color === 'w' ? 'white' : 'black';
+    if (preset.themed) return (world.pieceStyle && world.pieceStyle[side]) || DEFAULT_STYLE[side];
+    return preset[side];
+  }
   function pieceFor(key, color) {
     const t = MODELS[color === 'w' ? 'w' : 'b'][key] || MODELS.w[key];
     if (!t) return makePiece(key, color === 'w' ? whiteMat : blackMat);
     const g = t.clone(true);
-    const tint = color === 'w' ? IVORY : ROSEWOOD;
+    const st = styleFor(color);
     g.traverse((n) => {
       if (!n.isMesh) return;
       n.castShadow = true;
       if (n.material && n.material.map) {
         const m = n.material.clone();
-        m.color = tint.clone();
-        m.roughness = 0.5; m.metalness = 0.0; m.envMapIntensity = 1.0;
+        m.color = hx(st.tint, '#ffffff');
+        m.roughness = st.roughness; m.metalness = st.metalness;
+        m.emissive = hx(st.emissive, '#000000'); m.emissiveIntensity = st.emissiveIntensity || 0;
+        m.envMapIntensity = st.envMapIntensity ?? 1.0;
+        if ('clearcoat' in m) m.clearcoat = st.clearcoat ?? 0.4;
         n.material = m;
       } else {
         n.material = color === 'w' ? whiteMat : blackMat;
@@ -749,6 +772,13 @@ async function main() {
   $('#undoBtn')?.addEventListener('click', undo);
   $('#viewBtn').addEventListener('click', () => { eyeMode = false; $('#eyeBtn')?.classList.remove('on'); presetIdx = (presetIdx + 1) % PRESETS.length; $('#viewName').textContent = PRESETS[presetIdx].name; applyPreset(PRESETS[presetIdx]); });
   $('#flipBtn').addEventListener('click', () => { flip = !flip; applyPreset(PRESETS[presetIdx]); });
+  $('#styleBtn')?.addEventListener('click', () => {
+    styleIdx = (styleIdx + 1) % STYLE_PRESETS.length;
+    try { localStorage.setItem('chaturanga_style', styleIdx); } catch { /* ignore */ }
+    $('#styleName').textContent = STYLE_PRESETS[styleIdx].name;
+    syncPieces();
+    if (selected) { const p = game.get(selected.square); if (p) inspectPiece(p.type, p.color); }
+  });
   $('#autoflipBtn')?.addEventListener('click', () => {
     autoFlip = !autoFlip; $('#autoflipBtn').classList.toggle('on', autoFlip);
     if (autoFlip && MODE === 'hotseat') { flip = game.turn() === 'b'; applyPreset(PRESETS[presetIdx]); }
@@ -784,6 +814,7 @@ async function main() {
   $('#musicBtn')?.classList.toggle('on', audio.isMusicOn()); if (!audio.isMusicOn() && $('#musicBtn')) $('#musicBtn').innerHTML = '🎵̶ Music off';
   $('#soundBtn')?.classList.toggle('on', audio.isSfxOn()); if (!audio.isSfxOn() && $('#soundBtn')) $('#soundBtn').innerHTML = '🔕 Sounds';
   $('#muteBtn')?.classList.toggle('on', !muted);
+  if ($('#styleName')) $('#styleName').textContent = STYLE_PRESETS[styleIdx].name;
 
   updateStatus(); updateUndo(); updateCaptured();
   if (TRAIN) runTrainer(TRAIN);

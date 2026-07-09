@@ -1,0 +1,147 @@
+{
+  "id": "devasura",
+  "title": "Devāsura — the War of Gods and Demons",
+  "subtitle": "the eternal churning of light and shadow for the nectar of the deathless",
+  "assets": "assets/devasura",
+  "models": true,
+  "modelsDark": true,
+  "voice": { "web": "en-IN", "azure": "en-IN-Arjun:DragonHDLatestNeural" },
+  "sides": { "white": "Devas", "black": "Asuras" },
+  "pieceStyle": {
+    "white": { "tint": "#fff2c8", "roughness": 0.3, "metalness": 0.18, "emissive": "#4a3600", "emissiveIntensity": 0.4, "envMapIntensity": 1.4, "clearcoat": 0.6 },
+    "black": { "tint": "#4a3a5e", "roughness": 0.32, "metalness": 0.45, "emissive": "#180a2c", "emissiveIntensity": 0.18, "envMapIntensity": 1.2, "clearcoat": 0.5 }
+  },
+  "theme": {
+    "bg": "#0a0a1e",
+    "panel": "#12122e",
+    "accent": "#ffd24a",
+    "light": "#e9e6f2",
+    "dark": "#2b2350",
+    "whiteArmy": "#f6eecb",
+    "blackArmy": "#2a1c3a",
+    "text": "#f2eeff",
+    "muted": "#a9a2c8",
+    "font": "'Georgia', 'Noto Serif', serif"
+  },
+  "pieces": {
+    "raja": {
+      "name": "Indra", "en": "Devarāja · King of the Gods", "glyph": "\u265a",
+      "moral": "Sovereignty that must be forever re-earned",
+      "teaching": "Indra wields the vajra and rules the heavens, yet his throne is lost and won again through the ages. Guard the centre of your being — even a god's crown is held only by ceaseless vigilance and dharma."
+    },
+    "mantri": {
+      "name": "Brihaspati", "en": "Guru of the Gods", "glyph": "\u265b",
+      "moral": "Wisdom is the true power behind the throne",
+      "teaching": "Brihaspati counsels the gods across the whole field of heaven. Power without wisdom is a storm without a helm — the sage protects the king before the king conquers.",
+      "fall": "When the guru of the gods falls, even the heavens counsel poorly, and the throne trembles."
+    },
+    "ratha": {
+      "name": "Divya-Ratha", "en": "Celestial chariot", "glyph": "\u265c",
+      "moral": "Unwavering radiant momentum",
+      "teaching": "The celestial chariot streaks the sky in a line of light and does not swerve. Commit to your path with a god's certainty — momentum is faith made visible.",
+      "fall": "A fallen chariot of heaven teaches that even light, unshielded, can be dimmed."
+    },
+    "gaja": {
+      "name": "Airāvata", "en": "Indra's white elephant", "glyph": "\u265d",
+      "moral": "Measured, luminous strength",
+      "teaching": "Airavata rose from the churning ocean, vast and radiant, treading its diagonal with serene power. True strength is heaven's — patient, and never cruel.",
+      "fall": "The great white elephant falls, and the sky learns that even splendour is not spared the churning."
+    },
+    "ashva": {
+      "name": "Uchchaihshravas", "en": "The divine horse", "glyph": "\u265e",
+      "moral": "The leap beyond the possible",
+      "teaching": "Uchchaihshravas, the seven-headed horse of the churning, leaps where no straight road runs. When reason halts, a divine daring crosses what none else can.",
+      "fall": "A fallen divine steed reminds us that even wonder is mortal in the war of the ages."
+    },
+    "padati": {
+      "name": "Deva-Vira", "en": "Celestial warrior", "glyph": "\u265f",
+      "moral": "The steadfast light of the humble many",
+      "teaching": "The deva warrior never steps back, holding the line of heaven one square at a time. The smallest light, unwavering, upholds the whole vault of the sky.",
+      "fall": "A celestial warrior falls so the line of light may hold — no radiance spent for dharma is ever lost."
+    }
+  },
+  "piecesDark": {
+    "raja": {
+      "name": "Bali", "en": "Asura Emperor", "glyph": "\u265a",
+      "moral": "Even shadow may hold a noble heart",
+      "teaching": "Bali, king of the asuras, was mighty, generous, and true to his word — a demon more virtuous than many gods. Judge not by the side, but by the soul; the centre you must guard is your integrity.",
+      "fall": "When noble Bali falls, the heavens themselves fall silent, unsure they deserved the win."
+    },
+    "mantri": {
+      "name": "Shukrāchārya", "en": "Guru of the Asuras", "glyph": "\u265b",
+      "moral": "Genius devoted, for good or ill",
+      "teaching": "Shukracharya alone knew the sanjivani, the art of reviving the fallen, and ranged the whole field to serve his kings. The sharpest wisdom is a blade — its worth is decided by the hand and the cause it serves.",
+      "fall": "When the asura guru falls, no art remains to raise the demons' dead, and the tide turns."
+    },
+    "ratha": {
+      "name": "Asura-Ratha", "en": "Demon war-chariot", "glyph": "\u265c",
+      "moral": "Dark momentum, headlong",
+      "teaching": "The asura chariot charges without doubt or turning. Certainty is strength — but certainty in a shadowed cause only reaches its ruin the faster.",
+      "fall": "A shattered asura chariot warns that force, however proud, is not the same as right."
+    },
+    "gaja": {
+      "name": "Asura-Gaja", "en": "Demon war-elephant", "glyph": "\u265d",
+      "moral": "Vast might in a hungry cause",
+      "teaching": "The asura elephant is a mountain of dark power, treading its diagonal with terrible weight. Might is not wrong in itself — but might that serves only hunger devours its own bearer.",
+      "fall": "The dark titan falls, and the field learns that no mountain of might can outweigh the balance of dharma."
+    },
+    "ashva": {
+      "name": "Asura-Ashva", "en": "Demon steed", "glyph": "\u265e",
+      "moral": "Cunning that leaps in shadow",
+      "teaching": "The asura steed leaps from darkness where none expect it. Cleverness is a gift of both gods and demons — unlit by conscience, it wounds its own rider first.",
+      "fall": "A fallen demon-steed reminds us that cunning, unmoored from truth, is still mortal."
+    },
+    "padati": {
+      "name": "Asura-Vira", "en": "Demon warrior", "glyph": "\u265f",
+      "moral": "The valour of the misled many",
+      "teaching": "The asura warrior never retreats, marching bravely for his king. Courage is real in every heart — the question is only the banner over it, so choose a cause worthy of your fire.",
+      "fall": "An asura falls for the shadow-cause — no soldier's bravery is small, though the banner may be."
+    }
+  },
+  "pawnTeachings": [
+    "The light holds the line one square at a time — heaven is upheld by the humble, not the high.",
+    "A single unwavering ray outlasts a passing storm of shadow.",
+    "Serve the good without pride; the smallest deva guards the whole sky.",
+    "Hold the line beside your kin — a wall of light outshines any lone star.",
+    "The first step into the war of ages is duty; the rest is only holding fast.",
+    "Fear the churning, yet churn — for the nectar rises only when you dare the poison.",
+    "You cannot un-shine a light once given; so spend your radiance on what is worthy.",
+    "A warrior of heaven guards more than a square — he guards the balance of the worlds.",
+    "The sacrifice of the small keeps the great wheel turning toward the deathless.",
+    "Fight without hatred, even the asura — for gods and demons churn one ocean together."
+  ],
+  "pawnTeachingsDark": [
+    "The asura never yields — but ask always whose deathless nectar your fall will buy.",
+    "A dark heart can be brave; give that bravery to a cause that deserves it.",
+    "One demon marches for his king's pride; weigh always whose pride your steps uphold.",
+    "Might offered to hunger raises a throne that will one day fall upon its builder.",
+    "Hold the line for your kin — yet a wall for shadow cannot stand against the dawn.",
+    "The first step into a shadowed war is the hardest to unmake; take it with open eyes.",
+    "You cannot un-march a step — so be certain of the banner you follow into the dark.",
+    "A demon guards the gate, unaware the truest foe is the hunger within his own king.",
+    "The sacrifice of the misled is the heaviest of all — spend yourself for the light.",
+    "Serve, but never blindly — even a foot-soldier answers for the cause he carries."
+  ],
+  "captureLines": [
+    "Gods and demons churned one ocean; every blow between them stirred both poison and nectar.",
+    "A shadow falls before the light — yet do not gloat, for the wheel of the ages turns for both.",
+    "A piece falls and the churning advances; attachment to the winning is the only true loss.",
+    "Strike for dharma, never for spite — the asura, too, is a face of the one cosmic order.",
+    "Even Indra bowed to noble Bali — honour the foe whose soul outshone his side."
+  ],
+  "captureLinesDark": [
+    "The asuras strike like the churning depths — yet every blow for hunger recoils on the striker.",
+    "A god falls to the demon host; even in the shadow's triumph, mourn the light you dim.",
+    "The shadow gains a square, and the ocean churns darker; conquest is a debt, not a gain.",
+    "Strike for your king if you must, but know whose deathless thirst your sword truly serves.",
+    "Even the asuras were valiant — valour spent for hunger is the saddest churning of all."
+  ],
+  "promotionLine": "The steadfast Deva-Vira, having crossed the whole field of heaven, is raised to a celestial counsellor. Radiance carried to its end becomes wisdom.",
+  "checkLine": "Indra is threatened — rally the host of heaven and shield the throne of the gods.",
+  "checkmateTitle": "Amrita — the Deathless Won for the Gods",
+  "checkmateLine": "The gods drink the nectar and the heavens hold. Reflect: the deathless is not a prize to seize but a balance to keep — light must forever answer for the shadow it defeats.",
+  "promotionLineDark": "A steadfast Asura-Vira, having crossed the whole field, is raised to a lord of the shadow-host. Yet nectar seized by hunger turns to poison in the drinking.",
+  "checkLineDark": "Bali is threatened — the asura host closes ranks to shield their noble demon-emperor.",
+  "checkmateTitleDark": "The Shadow Drinks the Deathless",
+  "checkmateLineDark": "The asuras seize the nectar for a moment. Yet reflect: what is won by hunger cannot be held — the churning will turn again, as it forever must."
+}
