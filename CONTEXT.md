@@ -9,6 +9,9 @@
   **modern chess moves** but **authentic Chaturanga piece identities**, where every *world*
   teaches **moral values and life/battlefield lessons** (especially for the pawns).
 - **Owner:** @naveenneog (Naveen Gopalakrishna)
+- **Published:** public repo **github.com/naveenneog/Chaturanga** · playable at
+  **naveenneog.github.io/Chaturanga** (GitHub Pages from `docs/`) · release **v1.0.0** with
+  **Chaturanga-v1.0.0.apk** (debug-signed). Build the APK with `npm run apk`.
 - **Run:** `npm run serve` → http://localhost:5174/  ·  **Test:** `npm test` (node:test)
 - **Status:** v0.5 — playable 3D board with **two worlds** (Kurukshetra, Ramayana/Lanka), teachings
   + read-aloud, **realistic Hunyuan3D-2 pieces**, AND a full **teach-and-play layer**: an AI

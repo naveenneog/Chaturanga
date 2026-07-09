@@ -42,8 +42,8 @@ $gradle = "$root\android\app\build.gradle"
 function Write-NoBom([string]$path, [string]$text) {
   [System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding($false)))
 }
-$g = (Get-Content $gradle -Raw) -replace "^\uFEFF", ''
-$g = $g -replace 'versionName "[^"]*"', "versionName ""$Version"""
+$g = (Get-Content $gradle -Raw).TrimStart([char]0xFEFF)
+$g = [regex]::Replace($g, 'versionName "[^"]*"', ('versionName "{0}"' -f $Version))
 # Ensure the release build is signed with the debug key (idempotent)
 if ($g -notmatch "signingConfig signingConfigs.getByName\('debug'\)") {
   $g = $g -replace "(release\s*\{)", "`$1`r`n            signingConfig signingConfigs.getByName('debug')"
@@ -59,7 +59,7 @@ if (!(Test-Path $lp)) { "sdk.dir=$($env:ANDROID_HOME -replace '\\','\\')" | Out-
 Push-Location "$root\android"
 try { & .\gradlew.bat --no-daemon assembleRelease; $code = $LASTEXITCODE }
 finally { Pop-Location }
-if ($code -ne 0) { throw "gradle assembleRelease failed (exit $code) — not copying a stale APK" }
+if ($code -ne 0) { throw "gradle assembleRelease failed (exit $code) - not copying a stale APK" }
 
 # Collect the APK
 $apk = Get-ChildItem "$root\android\app\build\outputs\apk\release\*.apk" | Select-Object -First 1
