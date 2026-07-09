@@ -1,0 +1,81 @@
+{
+  "id": "ramayana",
+  "title": "Lanka — the War of the Ramayana",
+  "subtitle": "devotion, loyalty and dharma on the causeway to Lanka",
+  "assets": "assets/ramayana",
+  "models": true,
+  "voice": { "web": "en-IN", "azure": "en-IN-Arjun:DragonHDLatestNeural" },
+  "sides": { "white": "Vanara Sena", "black": "Rakshasas" },
+  "theme": {
+    "bg": "#0b1420",
+    "panel": "#0f1e2c",
+    "accent": "#e8c24d",
+    "light": "#cfe0e6",
+    "dark": "#2c4658",
+    "whiteArmy": "#eae2c6",
+    "blackArmy": "#2a2030",
+    "text": "#eef4f6",
+    "muted": "#9db4c0",
+    "font": "'Georgia', 'Noto Serif', serif"
+  },
+  "pieces": {
+    "raja": {
+      "name": "Rama", "en": "King · the Ideal Man", "glyph": "\u265a",
+      "moral": "Dharma above all — even above the self",
+      "teaching": "Rama is maryada purushottama, who keeps his word though it costs him a kingdom. Guard him as you would guard your own integrity; when he falls, the cause is lost."
+    },
+    "mantri": {
+      "name": "Vibhishana", "en": "Minister · Counsellor", "glyph": "\u265b",
+      "moral": "The courage to counsel rightly",
+      "teaching": "Vibhishana ranges the whole field and dares to leave a wrong side for a right one. Wise counsel that serves dharma is stronger than any army.",
+      "fall": "When the true counsellor is lost, kings march blindly into their own ruin."
+    },
+    "ratha": {
+      "name": "Ratha", "en": "War-chariot", "glyph": "\u265c",
+      "moral": "Unwavering resolve",
+      "teaching": "The chariot charges the straight road of duty and does not turn aside. Choose your line and press it with force.",
+      "fall": "A shattered chariot warns that speed without protection ends in the dust."
+    },
+    "gaja": {
+      "name": "Kumbha-Gaja", "en": "War-elephant", "glyph": "\u265d",
+      "moral": "Vast strength, rightly aimed",
+      "teaching": "The elephant treads its diagonal with patient, crushing power. Great strength is a blessing only when it keeps to its dharma.",
+      "fall": "The great beast falls, and the field learns that pride is heavier than tusks."
+    },
+    "ashva": {
+      "name": "Hanuman-Ashva", "en": "Cavalry · the Leaper", "glyph": "\u265e",
+      "moral": "Devotion that leaps every obstacle",
+      "teaching": "Like Hanuman crossing the ocean, the Ashva leaps where no straight road exists. Faith and courage go where reason alone cannot.",
+      "fall": "A fallen leaper reminds us that even the boldest heart is mortal — spend it wisely."
+    },
+    "padati": {
+      "name": "Vanara", "en": "Foot-soldier · Monkey-warrior", "glyph": "\u265f",
+      "moral": "The strength of the humble many",
+      "teaching": "The vanaras built a bridge across the sea, stone by stone. The humblest soldier, never retreating, does the patient work that wins the war.",
+      "fall": "One vanara falls so the bridge may hold — no small sacrifice for dharma is ever wasted."
+    }
+  },
+  "pawnTeachings": [
+    "Stone by stone the vanaras bridged the sea — great works are built one small step at a time.",
+    "The monkey-warrior never retreats; keep your face toward your dharma.",
+    "Even the smallest servant of a great cause carries the whole cause within.",
+    "Devotion, not size, moved Hanuman across the ocean — carry your task with a full heart.",
+    "Hold the line beside your brothers; a bridge of many hands outlasts any lone hero.",
+    "The first stone is the hardest to lay; after it, the causeway is only duty.",
+    "You cannot un-lay a stone — weigh each step, then commit it fully.",
+    "A humble guard protects more than it strikes; steadfast presence is its own strength.",
+    "The sacrifice of the small opens the victory of the whole.",
+    "Serve without clinging to reward — build the bridge, and let the sea be crossed."
+  ],
+  "captureLines": [
+    "Even in a righteous war, every fallen foe was once someone's kin — strike without hatred.",
+    "The victor bows to the fallen; dharma asks for justice, never cruelty.",
+    "A piece falls and the causeway advances — attachment is the only true loss.",
+    "Do your duty cleanly; the fallen too played their part in the turning of the tale.",
+    "Rama mourned even Ravana's rites — honour the enemy you must defeat."
+  ],
+  "promotionLine": "The steadfast Vanara, having crossed the whole field, is raised to a counsellor's rank. Devotion carried to its end becomes wisdom.",
+  "checkLine": "Rama is threatened — rally the Vanara Sena and shield the heart of the cause.",
+  "checkmateTitle": "Jaya Shri Rama — Victory of Dharma",
+  "checkmateLine": "Lanka falls and dharma is restored. Reflect: victory is hollow unless it serves what is right."
+}

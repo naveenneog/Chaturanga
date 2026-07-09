@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Chaturanga — Choose your battle</title>
+    <meta name="theme-color" content="#1a0f08" />
+    <style>
+      :root { --bg:#160c05; --panel:#241308; --accent:#e8a33d; --text:#f4e6cd; --muted:#b79b74; }
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body { margin: 0; min-height: 100%; background: radial-gradient(120% 80% at 50% 0%, #2a1608, #100802 70%); color: var(--text); font-family: Georgia, 'Noto Serif', serif; }
+      .wrap { max-width: 760px; margin: 0 auto; padding: calc(1.2rem + env(safe-area-inset-top,0)) 1rem calc(2rem + env(safe-area-inset-bottom,0)); }
+      h1 { text-align: center; font-size: clamp(1.8rem, 7vw, 2.8rem); letter-spacing: .12em; color: var(--accent); text-shadow: 0 0 30px rgba(232,163,61,.5); margin: .2rem 0 0; }
+      .tag { text-align: center; color: var(--muted); font-style: italic; margin: .2rem 0 1.4rem; font-size: .95rem; }
+      h2 { font-size: .78rem; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); margin: 1.5rem 0 .6rem; opacity: .85; }
+      .worlds { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+      .world { position: relative; border: 1px solid rgba(232,163,61,.3); border-radius: 16px; padding: 1rem; cursor: pointer; background: linear-gradient(180deg, rgba(60,34,14,.5), rgba(20,11,4,.6)); transition: transform .15s, border-color .2s, box-shadow .2s; overflow: hidden; min-height: 108px; }
+      .world:hover { transform: translateY(-2px); }
+      .world.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 12px 30px rgba(0,0,0,.5); }
+      .world .wt { font-size: 1.15rem; color: #ffe6bb; }
+      .world .ws { font-size: .8rem; color: var(--muted); margin-top: .25rem; line-height: 1.35; }
+      .world .swatch { position: absolute; top: .8rem; right: .8rem; width: 34px; height: 18px; border-radius: 4px; border: 1px solid rgba(255,255,255,.25); }
+      .row { display: flex; flex-wrap: wrap; gap: .5rem; }
+      .opt { flex: 1 1 auto; min-width: 96px; text-align: center; font: inherit; font-size: .95rem; color: var(--text); background: rgba(255,255,255,.05); border: 1px solid rgba(232,163,61,.32); border-radius: 12px; padding: .7rem .8rem; cursor: pointer; min-height: 48px; }
+      .opt.sel { background: linear-gradient(180deg, #ffcf7a, #e8a33d); color: #241200; border-color: transparent; font-weight: bold; }
+      .opt small { display: block; font-size: .68rem; font-weight: normal; opacity: .8; margin-top: .15rem; }
+      #sideRow.hide { display: none; }
+      .levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: .4rem; }
+      .lvl { text-align: center; font: inherit; color: var(--text); background: rgba(255,255,255,.05); border: 1px solid rgba(232,163,61,.32); border-radius: 12px; padding: .6rem .2rem; cursor: pointer; min-height: 62px; }
+      .lvl.sel { background: linear-gradient(180deg, #ffcf7a, #e8a33d); color: #241200; border-color: transparent; }
+      .lvl b { display: block; font-size: .92rem; }
+      .lvl small { font-size: .62rem; opacity: .8; }
+      #lvlBlurb { color: var(--muted); font-size: .82rem; min-height: 1.4em; margin: .5rem 0 0; text-align: center; }
+      .begin { display: block; width: 100%; margin-top: 1.6rem; font: inherit; font-size: 1.2rem; color: #241200; background: linear-gradient(180deg, #ffcf7a, #e8a33d); border: 0; border-radius: 16px; padding: 1rem; cursor: pointer; box-shadow: 0 12px 30px rgba(232,163,61,.4); min-height: 56px; }
+      .openings { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+      .op { text-align: left; font: inherit; color: var(--text); background: rgba(255,255,255,.04); border: 1px solid rgba(232,163,61,.28); border-radius: 12px; padding: .7rem .8rem; cursor: pointer; min-height: 62px; }
+      .op:hover { border-color: var(--accent); }
+      .op b { color: #ffe6bb; font-size: .98rem; }
+      .op small { display: block; color: var(--muted); font-size: .74rem; margin-top: .2rem; line-height: 1.3; }
+      @media (max-width: 460px) { .openings { grid-template-columns: 1fr; } .lvl small { display: none; } }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Chaturanga</h1>
+      <p class="tag">the four-army game — play, and learn its dharma</p>
+
+      <h2>Choose a world</h2>
+      <div class="worlds" id="worlds"></div>
+
+      <h2>Mode</h2>
+      <div class="row" id="modeRow">
+        <button class="opt sel" data-mode="ai">Play the Guru<small>vs. the AI opponent</small></button>
+        <button class="opt" data-mode="hotseat">Two players<small>pass-and-play</small></button>
+      </div>
+
+      <div id="sideRow">
+        <h2>Your army</h2>
+        <div class="row" id="sides"></div>
+      </div>
+
+      <div id="levelWrap">
+        <h2>Difficulty</h2>
+        <div class="levels" id="levels"></div>
+        <p id="lvlBlurb"></p>
+      </div>
+
+      <button class="begin" id="begin">⚔ Begin the battle</button>
+
+      <h2>Learn the openings</h2>
+      <div class="openings" id="openings"></div>
+    </div>
+
+    <script type="module">
+      import { LEVELS } from './js/engine.js';
+      import { OPENINGS } from './js/openings.js';
+
+      const WORLD_IDS = ['kurukshetra', 'ramayana'];
+      const state = { world: 'kurukshetra', mode: 'ai', side: 'w', level: 3 };
+      const worlds = {};
+
+      const q = new URLSearchParams(location.search);
+      if (q.get('world')) state.world = q.get('world').replace(/[^a-z]/gi, '');
+
+      async function loadWorlds() {
+        for (const id of WORLD_IDS) {
+          try { worlds[id] = await (await fetch(`worlds/${id}.json`)).json(); } catch { /* skip */ }
+        }
+        renderWorlds(); renderSides();
+      }
+      function renderWorlds() {
+        const host = document.getElementById('worlds');
+        host.innerHTML = WORLD_IDS.filter((id) => worlds[id]).map((id) => {
+          const w = worlds[id]; const t = w.theme || {};
+          return `<div class="world ${id === state.world ? 'sel' : ''}" data-world="${id}">
+            <span class="swatch" style="background:linear-gradient(90deg,${t.whiteArmy || '#eee'} 50%,${t.blackArmy || '#333'} 50%)"></span>
+            <div class="wt">${w.title.split('—')[0].trim()}</div>
+            <div class="ws">${w.subtitle || ''}</div></div>`;
+        }).join('');
+        host.querySelectorAll('.world').forEach((el) => el.onclick = () => { state.world = el.dataset.world; renderWorlds(); renderSides(); });
+      }
+      function renderSides() {
+        const w = worlds[state.world]; if (!w) return;
+        const s = w.sides || { white: 'White', black: 'Black' };
+        const host = document.getElementById('sides');
+        host.innerHTML = `
+          <button class="opt ${state.side === 'w' ? 'sel' : ''}" data-side="w">${s.white}<small>move first</small></button>
+          <button class="opt ${state.side === 'b' ? 'sel' : ''}" data-side="b">${s.black}<small>move second</small></button>`;
+        host.querySelectorAll('.opt').forEach((el) => el.onclick = () => { state.side = el.dataset.side; renderSides(); });
+      }
+      function renderModes() {
+        document.querySelectorAll('#modeRow .opt').forEach((el) => el.onclick = () => {
+          state.mode = el.dataset.mode;
+          document.querySelectorAll('#modeRow .opt').forEach((x) => x.classList.toggle('sel', x === el));
+          document.getElementById('sideRow').classList.toggle('hide', state.mode !== 'ai');
+          document.getElementById('levelWrap').style.display = state.mode === 'ai' ? '' : 'none';
+        });
+      }
+      function renderLevels() {
+        const host = document.getElementById('levels');
+        host.innerHTML = LEVELS.map((l) => `<button class="lvl ${l.id === state.level ? 'sel' : ''}" data-lvl="${l.id}">
+          <b>${l.name}</b><small>${l.title}</small></button>`).join('');
+        host.querySelectorAll('.lvl').forEach((el) => el.onclick = () => { state.level = +el.dataset.lvl; renderLevels(); });
+        const cur = LEVELS.find((l) => l.id === state.level);
+        document.getElementById('lvlBlurb').textContent = cur ? cur.blurb : '';
+      }
+      function renderOpenings() {
+        const host = document.getElementById('openings');
+        host.innerHTML = OPENINGS.map((o) => `<button class="op" data-op="${o.id}"><b>${o.name}</b><small>${o.sub} — ${o.idea.split('.')[0]}.</small></button>`).join('');
+        host.querySelectorAll('.op').forEach((el) => el.onclick = () => {
+          location.href = `play.html?world=${state.world}&mode=${state.mode}&side=${state.side}&level=${state.level}&train=${el.dataset.op}`;
+        });
+      }
+      document.getElementById('begin').onclick = () => {
+        const p = new URLSearchParams({ world: state.world, mode: state.mode, side: state.side, level: String(state.level) });
+        location.href = `play.html?${p.toString()}`;
+      };
+
+      renderModes(); renderLevels(); renderOpenings(); loadWorlds();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chaturanga — the four-army game of dharma</title>
+    <meta name="theme-color" content="#1a0f08" />
+    <meta name="description" content="Chaturanga — the ancient Indian game of the four army divisions, played with modern chess moves. Play a teaching AI with 5 levels, learn openings, and master two themed worlds in real 3D." />
+    <meta property="og:title" content="Chaturanga — the four-army game of dharma" />
+    <meta property="og:description" content="Ancient Indian chess in real 3D: a teaching AI with 5 levels, an openings trainer, a piece inspector, a Warrior's Eye camera, and two themed worlds." />
+    <meta property="og:image" content="img/ramayana.png" />
+    <style>
+      :root { --bg:#140a04; --gold:#e8a33d; --gold2:#ffcf7a; --text:#f4e6cd; --muted:#b79b74; --panel:#241308; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: radial-gradient(120% 70% at 50% -10%, #3a2110, #100802 65%); color: var(--text); font-family: Georgia, 'Noto Serif', serif; -webkit-font-smoothing: antialiased; }
+      a { color: var(--gold); }
+      .wrap { max-width: 1000px; margin: 0 auto; padding: 0 1.1rem; }
+      header { text-align: center; padding: 2.6rem 1rem 1.4rem; }
+      header img.icon { width: 128px; height: 128px; border-radius: 28px; box-shadow: 0 14px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(232,163,61,.4); }
+      h1 { font-size: clamp(2.2rem, 8vw, 3.6rem); letter-spacing: .12em; color: var(--gold); text-shadow: 0 0 34px rgba(232,163,61,.5); margin: .7rem 0 .1rem; }
+      .tag { color: var(--muted); font-style: italic; font-size: 1.12rem; margin: .1rem 0 1.4rem; }
+      .cta { display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; }
+      .btn { font: inherit; font-size: 1.1rem; padding: .85rem 1.5rem; border-radius: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: .4rem; min-height: 52px; }
+      .btn.play { background: linear-gradient(180deg, var(--gold2), var(--gold)); color: #241200; font-weight: bold; box-shadow: 0 12px 30px rgba(232,163,61,.4); border: 0; }
+      .btn.dl { background: rgba(255,255,255,.06); color: var(--text); border: 1px solid rgba(232,163,61,.45); }
+      .btn:hover { transform: translateY(-2px); }
+      .note { color: var(--muted); font-size: .82rem; margin-top: .7rem; }
+      section { padding: 1.8rem 0; }
+      h2 { font-size: .8rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); text-align: center; opacity: .9; margin-bottom: 1.2rem; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .9rem; }
+      .card { background: linear-gradient(180deg, rgba(60,34,14,.45), rgba(20,11,4,.55)); border: 1px solid rgba(232,163,61,.28); border-radius: 16px; padding: 1.1rem 1.2rem; }
+      .card h3 { margin: .1rem 0 .35rem; color: #ffe6bb; font-size: 1.12rem; }
+      .card p { margin: 0; color: var(--muted); line-height: 1.5; font-size: .95rem; }
+      .card .ic { font-size: 1.5rem; }
+      .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .8rem; }
+      .shots figure { margin: 0; }
+      .shots img { width: 100%; border-radius: 14px; border: 1px solid rgba(232,163,61,.28); box-shadow: 0 10px 26px rgba(0,0,0,.5); display: block; }
+      .shots figcaption { text-align: center; color: var(--muted); font-size: .82rem; margin-top: .4rem; }
+      .worlds2 { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+      @media (max-width: 560px) { .worlds2 { grid-template-columns: 1fr; } }
+      footer { text-align: center; color: var(--muted); padding: 2rem 1rem 3rem; font-size: .86rem; border-top: 1px solid rgba(232,163,61,.18); margin-top: 1.5rem; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <img class="icon" src="img/icon.png" alt="Chaturanga app icon — a carved Raja" />
+        <h1>Chaturanga</h1>
+        <p class="tag">the ancient game of the four army divisions — play, and learn its dharma</p>
+        <div class="cta">
+          <a class="btn play" href="setup.html">⚔ Play in your browser</a>
+          <a class="btn dl" href="https://github.com/naveenneog/Chaturanga/releases/latest/download/Chaturanga-v1.0.0.apk">⬇ Download Android APK</a>
+        </div>
+        <p class="note">Real-3D board · works offline · no sign-in · a teaching AI that explains its dharma.</p>
+      </header>
+
+      <section>
+        <h2>What it is</h2>
+        <div class="grid">
+          <div class="card"><div class="ic">♟</div><h3>Authentic identities, modern moves</h3><p>Raja, Mantri, Ratha, Gaja, Ashva and Padati — the four-army host — move exactly like modern chess. Every piece carries a moral teaching.</p></div>
+          <div class="card"><div class="ic">🧠</div><h3>A teaching AI, 5 levels</h3><p>Play the Guru from Padati to Mantri. An alpha-beta engine hints the best move and reviews your blunders — beatable at first, masterful at the top.</p></div>
+          <div class="card"><div class="ic">📖</div><h3>Openings trainer</h3><p>Walk six classic openings move-by-move — Italian, Ruy López, Sicilian, French, Queen's Gambit, King's Indian — each narrated as a lesson in strategy.</p></div>
+          <div class="card"><div class="ic">🔍</div><h3>Piece inspector</h3><p>Tap a piece to see a rotating 3D render of it and a diagram of exactly how it moves and captures.</p></div>
+          <div class="card"><div class="ic">👁</div><h3>Warrior's Eye</h3><p>Drop the camera to a piece's eye level and look across the battlefield from its perspective.</p></div>
+          <div class="card"><div class="ic">🌍</div><h3>Themed worlds</h3><p>Two hand-crafted worlds, each with its own army, board, teachings and a cinematic intro — with more to come.</p></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Two worlds, two armies</h2>
+        <div class="worlds2">
+          <figure class="shots" style="grid-template-columns:1fr"><img src="img/board.png" alt="Kurukshetra board" /><figcaption>Kurukshetra — the Field of Dharma (the Mahabharata)</figcaption></figure>
+          <figure class="shots" style="grid-template-columns:1fr"><img src="img/ramayana.png" alt="Ramayana / Lanka board with the vanara army" /><figcaption>Lanka — the War of the Ramayana (the vanara host)</figcaption></figure>
+        </div>
+      </section>
+
+      <section>
+        <h2>Screens</h2>
+        <div class="shots">
+          <figure><img src="img/lobby.png" alt="Lobby: choose world, mode, side and level" /><figcaption>Choose your battle</figcaption></figure>
+          <figure><img src="img/warriorseye.png" alt="Warrior's Eye piece-perspective view" /><figcaption>Warrior's Eye + piece inspector</figcaption></figure>
+          <figure><img src="img/mobile.png" alt="Mobile gameplay with coach hint" /><figcaption>On a phone, with the coach</figcaption></figure>
+        </div>
+      </section>
+
+      <footer>
+        <p>Built by <a href="https://github.com/naveenneog">Naveen Gopalakrishna</a> ·
+          <a href="https://github.com/naveenneog/Chaturanga">Source on GitHub</a> ·
+          Licensed <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">PolyForm Noncommercial 1.0.0</a></p>
+        <p>Chess rules via chess.js · rendered with Three.js · pieces reconstructed with Hunyuan3D-2 · intros by Azure Sora-2.</p>
+      </footer>
+    </div>
+  </body>
+</html>

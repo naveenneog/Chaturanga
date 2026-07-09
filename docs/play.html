@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Chaturanga — the Field of Dharma</title>
+    <meta name="theme-color" content="#1a0f08" />
+    <script type="importmap">
+      { "imports": { "three": "./vendor/three.module.js" } }
+    </script>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #1a0f08; font-family: Georgia, 'Noto Serif', serif; color: #f4e6cd; -webkit-text-size-adjust: 100%; }
+      * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+      button, select, a { touch-action: manipulation; }
+      #stage { position: fixed; inset: 0; }
+      #stage canvas { display: block; touch-action: none; }
+      nav { position: fixed; top: .6rem; left: .6rem; z-index: 70; display: flex; gap: .3rem; margin-top: env(safe-area-inset-top, 0px); }
+      nav a { font: inherit; font-size: .8rem; color: #f4e6cd; background: rgba(0,0,0,.42); border: 1px solid rgba(232,163,61,.35); border-radius: 8px; padding: .3rem .6rem; text-decoration: none; min-height: 40px; display: inline-flex; align-items: center; }
+      #title { position: fixed; top: .8rem; left: 0; right: 0; text-align: center; font-size: 1.25rem; letter-spacing: .06em; color: #e8a33d; text-shadow: 0 0 20px rgba(232,163,61,.55); pointer-events: none; }
+      #status { position: fixed; top: 2.5rem; left: 0; right: 0; text-align: center; font-size: .95rem; color: #d9c39c; text-shadow: 0 2px 6px #000; pointer-events: none; }
+      #turn { position: fixed; top: 3.9rem; left: 0; right: 0; display: flex; justify-content: center; gap: .5rem; pointer-events: none; }
+      .side { display: inline-flex; align-items: center; gap: .4rem; font-size: .82rem; padding: .28rem .7rem; border-radius: 999px; background: rgba(0,0,0,.4); border: 1px solid rgba(232,163,61,.28); }
+      .side.on { border-color: #e8a33d; box-shadow: 0 0 14px rgba(232,163,61,.4); color: #ffe6bb; }
+      .dot { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.5); }
+      #hud { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: .7rem; align-items: center; justify-content: center; padding: 1rem; padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); flex-wrap: wrap; background: linear-gradient(to top, rgba(26,15,8,.94) 45%, rgba(26,15,8,0)); }
+      #hud button, #hud select { font: inherit; color: #f4e6cd; background: rgba(255,255,255,.06); border: 1px solid rgba(232,163,61,.4); border-radius: 12px; padding: .7rem 1rem; cursor: pointer; min-height: 46px; display: inline-flex; align-items: center; }
+      #hud select option { color: #111; }
+      #card { position: fixed; left: 50%; bottom: 6rem; transform: translateX(-50%) translateY(20px); width: min(92vw, 480px); background: linear-gradient(180deg, #2a1608, #180d05); border: 1px solid rgba(232,163,61,.45); border-radius: 16px; padding: 1rem 1.2rem; box-shadow: 0 20px 50px rgba(0,0,0,.6); text-align: center; opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; z-index: 60; }
+      #card.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+      #card .kind { font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; padding: .15rem .6rem; border-radius: 999px; background: #d9b64e; color: #1a0d04; }
+      #card .kind.capture { background: #c0392b; color: #fff; }
+      #card .kind.promotion { background: #e8a33d; color: #1a0d04; }
+      #card .kind.checkmate { background: #ffd24a; color: #1a0d04; }
+      #card h2 { margin: .5rem 0 .1rem; font-size: 1.4rem; }
+      #card .en { color: #b79b74; font-style: italic; margin: 0; }
+      #card .m { margin: .55rem 0 0; font-size: 1.03rem; line-height: 1.5; }
+      #hint { position: fixed; left: 0; right: 0; bottom: 4.6rem; text-align: center; font-size: .72rem; color: #8a745a; pointer-events: none; }
+      #intro { position: fixed; inset: 0; z-index: 100; background: #0d0703; display: flex; align-items: center; justify-content: center; transition: opacity .7s; }
+      #introVid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      #introGrad { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, transparent 40%, rgba(13,7,3,.55) 100%), linear-gradient(to top, rgba(13,7,3,.95), transparent 45%); }
+      #introTitle { position: absolute; top: 12%; left: 0; right: 0; text-align: center; font-size: clamp(2rem, 8vw, 4.2rem); letter-spacing: .18em; color: #ffd98a; text-shadow: 0 0 40px rgba(232,163,61,.7); }
+      #introEnter { position: absolute; bottom: 16%; font: inherit; font-size: 1.1rem; color: #241200; background: linear-gradient(180deg, #ffcf7a, #e8a33d); border: 0; border-radius: 14px; padding: .9rem 1.8rem; cursor: pointer; box-shadow: 0 10px 30px rgba(232,163,61,.45); min-height: 48px; }
+      #opening { position: fixed; top: 5.3rem; left: 50%; transform: translateX(-50%); font-size: .74rem; letter-spacing: .04em; color: #ffe6bb; background: rgba(0,0,0,.5); border: 1px solid rgba(232,163,61,.4); border-radius: 999px; padding: .25rem .8rem; opacity: 0; transition: opacity .3s; pointer-events: none; max-width: 90vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      #opening.show { opacity: 1; }
+      #thinking { position: fixed; top: 5.3rem; right: .8rem; width: 12px; height: 12px; border-radius: 50%; background: #e8a33d; box-shadow: 0 0 10px #e8a33d; opacity: 0; }
+      #thinking.show { opacity: 1; animation: pulse 1s infinite; }
+      @keyframes pulse { 0%,100% { transform: scale(.7); opacity: .5; } 50% { transform: scale(1.15); opacity: 1; } }
+      #coach { position: fixed; left: 50%; top: 6.6rem; transform: translateX(-50%) translateY(-8px); width: min(92vw, 440px); background: linear-gradient(180deg, #21304a, #141d2e); border: 1px solid rgba(120,170,255,.4); border-radius: 12px; padding: .6rem .9rem; font-size: .9rem; line-height: 1.4; color: #dce7ff; box-shadow: 0 12px 30px rgba(0,0,0,.5); opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; z-index: 62; }
+      #coach.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+      #coach.warn { background: linear-gradient(180deg, #4a2320, #2a1310); border-color: rgba(255,120,100,.5); color: #ffdcd4; }
+      #coach.nudge { background: linear-gradient(180deg, #234a30, #12261a); border-color: rgba(120,255,160,.4); color: #d6ffe2; }
+      #coach b { color: #fff; }
+      #inspector { position: fixed; top: 6.2rem; right: .6rem; width: 156px; background: linear-gradient(180deg, rgba(42,22,8,.92), rgba(24,13,5,.92)); border: 1px solid rgba(232,163,61,.4); border-radius: 14px; padding: .5rem; box-shadow: 0 14px 34px rgba(0,0,0,.55); opacity: 0; transform: translateX(12px); transition: opacity .3s, transform .3s; pointer-events: none; z-index: 55; }
+      #inspector.show { opacity: 1; transform: translateX(0); }
+      #inspName { text-align: center; font-size: .82rem; color: #ffe6bb; margin: 0 0 .2rem; }
+      #inspCanvas { width: 100%; height: 150px; display: block; }
+      #moveGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin-top: .35rem; }
+      #moveGrid i { aspect-ratio: 1; border-radius: 3px; background: rgba(255,255,255,.06); }
+      #moveGrid i.mv, #moveGrid i.move { background: #e8a33d; }
+      #moveGrid i.cap { background: #c0392b; }
+      #moveGrid i.me { background: #f4e6cd; box-shadow: 0 0 0 1px #e8a33d inset; }
+      #moveCap { text-align: center; font-size: .7rem; color: #cbb389; margin: .35rem 0 0; }
+      #moveCap .lg { font-size: .85rem; }
+      #moveCap .lg.mv { color: #e8a33d; } #moveCap .lg.cap { color: #ff6b5c; }
+      #inspClose { position: absolute; top: 4px; right: 6px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(232,163,61,.45); background: rgba(0,0,0,.55); color: #f4e6cd; font-size: 13px; line-height: 1; cursor: pointer; pointer-events: auto; z-index: 2; }
+      #captured { position: fixed; top: 5rem; left: .5rem; display: flex; flex-direction: column; gap: 4px; z-index: 40; pointer-events: none; margin-top: env(safe-area-inset-top, 0px); }
+      .captray { display: flex; flex-wrap: wrap; gap: 1px; max-width: 30vw; font-size: 15px; line-height: 1.1; min-height: 12px; text-shadow: 0 1px 3px #000; }
+      #trainer { position: fixed; left: 50%; bottom: 5.6rem; transform: translateX(-50%); display: none; gap: .4rem; align-items: center; z-index: 63; background: rgba(0,0,0,.6); border: 1px solid rgba(232,163,61,.4); border-radius: 12px; padding: .35rem .5rem; }
+      #trainer.show { display: flex; }
+      #trainer button { font: inherit; font-size: .82rem; color: #f4e6cd; background: rgba(255,255,255,.06); border: 1px solid rgba(232,163,61,.4); border-radius: 8px; padding: .35rem .6rem; min-height: 36px; cursor: pointer; }
+      #trStep { font-size: .74rem; color: #ffe6bb; padding: 0 .2rem; }
+      #hud button:disabled { opacity: .4; }
+      #more { position: fixed; right: .6rem; bottom: 4.7rem; display: none; flex-direction: column; gap: .4rem; background: rgba(26,15,8,.97); border: 1px solid rgba(232,163,61,.4); border-radius: 12px; padding: .5rem; z-index: 71; box-shadow: 0 12px 30px rgba(0,0,0,.55); }
+      #more.show { display: flex; }
+      #more button { justify-content: flex-start; width: 100%; }
+      #hud button.on, #more button.on { background: linear-gradient(180deg,#ffcf7a,#e8a33d); color: #241200; border-color: transparent; }
+      .modal { position: fixed; inset: 0; z-index: 90; display: none; align-items: center; justify-content: center; background: rgba(8,4,2,.74); padding: 1rem; }
+      .modal.show { display: flex; }
+      .modal .sheet { width: min(92vw, 420px); background: linear-gradient(180deg,#2a1608,#160c05); border: 1px solid rgba(232,163,61,.5); border-radius: 18px; padding: 1.3rem; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,.6); }
+      .modal h3, .modal h2 { margin: .3rem 0 .8rem; color: #ffe6bb; }
+      #promoRow { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; }
+      #promoRow button { font: inherit; font-size: 1.9rem; width: 66px; height: 72px; border-radius: 12px; border: 1px solid rgba(232,163,61,.4); background: rgba(255,255,255,.06); color: #f4e6cd; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      #promoRow button small { font-size: .5rem; margin-top: 2px; letter-spacing: .04em; }
+      #over .m { font-size: 1.02rem; line-height: 1.5; color: #f0e2c6; }
+      .orow { display: flex; gap: .6rem; justify-content: center; margin-top: 1.1rem; }
+      .orow button, .btnlike { font: inherit; font-size: 1rem; color: #241200; background: linear-gradient(180deg,#ffcf7a,#e8a33d); border: 0; border-radius: 12px; padding: .7rem 1.1rem; cursor: pointer; text-decoration: none; min-height: 46px; display: inline-flex; align-items: center; }
+      .btnlike { background: rgba(255,255,255,.08); color: #f4e6cd; border: 1px solid rgba(232,163,61,.4); }
+      @media (max-width: 640px) {
+        #title { display: none; }
+        #status { top: calc(.7rem + env(safe-area-inset-top, 0px)); }
+        #turn { top: calc(2rem + env(safe-area-inset-top, 0px)); }
+        #hint { display: none; }
+        #card { bottom: 9.5rem; }
+        #opening { top: calc(3.4rem + env(safe-area-inset-top, 0px)); }
+        #thinking { top: calc(3.4rem + env(safe-area-inset-top, 0px)); }
+        #coach { top: calc(4.2rem + env(safe-area-inset-top, 0px)); }
+        #inspector { top: calc(9rem + env(safe-area-inset-top, 0px)); width: 118px; opacity: .96; }
+        #inspCanvas { height: 104px; }
+        #captured { top: calc(3.2rem + env(safe-area-inset-top, 0px)); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="intro">
+      <video id="introVid" muted playsinline preload="auto"></video>
+      <div id="introGrad"></div>
+      <div id="introTitle">Chaturanga</div>
+      <button id="introEnter">⚔ Enter the field of dharma</button>
+    </div>
+    <nav>
+      <a href="setup.html" id="lobbyLink">⚙ Lobby</a>
+    </nav>
+    <div id="stage"></div>
+    <div id="title">Chaturanga</div>
+    <div id="status">White to move</div>
+    <div id="turn"></div>
+    <div id="captured"><div id="capB" class="captray"></div><div id="capW" class="captray"></div></div>
+    <div id="opening"></div>
+    <div id="thinking"></div>
+    <div id="coach"></div>
+    <div id="inspector">
+      <button id="inspClose" aria-label="Close piece inspector">✕</button>
+      <p id="inspName"></p>
+      <canvas id="inspCanvas"></canvas>
+      <div id="moveGrid"></div>
+      <p id="moveCap">how it moves · <span class="lg mv">◼</span> move <span class="lg cap">◼</span> capture</p>
+    </div>
+    <div id="trainer">
+      <span id="trStep"></span>
+      <button id="trPause" aria-label="Pause or resume the trainer">⏸ Pause</button>
+      <button id="trExit" aria-label="Exit the trainer">✕ Exit</button>
+    </div>
+    <div id="hint">tap a piece to see its dharma · tap a glowing square to move · drag to orbit</div>
+    <div id="card"><span id="cKind" class="kind"></span><h2 id="cName"></h2><p class="en" id="cEn"></p><p class="m" id="cMeaning"></p></div>
+    <div id="promo" class="modal" role="dialog" aria-modal="true" aria-label="Choose promotion">
+      <div class="sheet"><h3>Promote the Padati</h3><div id="promoRow"></div></div>
+    </div>
+    <div id="over" class="modal" role="dialog" aria-modal="true">
+      <div class="sheet">
+        <span id="overKind" class="kind checkmate">Victory</span>
+        <h2 id="overTitle"></h2>
+        <p id="overLine" class="m"></p>
+        <div class="orow"><button id="overNew">↻ Play again</button><a id="overLobby" class="btnlike" href="setup.html">⚙ Lobby</a></div>
+      </div>
+    </div>
+    <div id="hud">
+      <button id="newBtn" aria-label="New game">↻ New</button>
+      <button id="undoBtn" aria-label="Undo move" disabled>↶ Undo</button>
+      <button id="hintBtn" aria-label="Coach hint">💡 Hint</button>
+      <select id="worldSel" title="World" aria-label="Choose world"></select>
+      <button id="moreBtn" aria-label="More controls" aria-expanded="false">⋯ More</button>
+      <div id="more">
+        <button id="viewBtn" aria-label="Change camera view">🎥 <span id="viewName">Sitting</span></button>
+        <button id="eyeBtn" aria-label="Warrior's Eye piece-perspective view">👁 <span>Eye</span></button>
+        <button id="flipBtn" aria-label="Flip the board">⇅ Flip</button>
+        <button id="autoflipBtn" aria-label="Auto-flip each turn (2-player)">⟳ Auto-flip</button>
+        <button id="muteBtn" aria-label="Read aloud on or off">🔊 Voice</button>
+      </div>
+    </div>
+    <script type="module" src="js/board3d.js"></script>
+    <script>
+      (function () {
+        var ov = document.getElementById('intro'), v = document.getElementById('introVid');
+        var wf = (new URLSearchParams(location.search).get('world') || 'kurukshetra').replace(/[^a-z]/gi, '');
+        var done = false;
+        var seenKey = 'chaturanga_intro_' + wf;
+        function dismiss() { if (done) return; done = true; try { localStorage.setItem(seenKey, '1'); } catch (e) {} ov.style.opacity = 0; setTimeout(function () { ov.style.display = 'none'; }, 700); try { v.pause(); } catch (e) {} }
+        document.getElementById('introEnter').addEventListener('click', dismiss);
+        // Seen this world's intro before? Skip straight to the game.
+        var seen = false; try { seen = !!localStorage.getItem(seenKey); } catch (e) {}
+        if (seen) { ov.style.display = 'none'; done = true; return; }
+        v.addEventListener('ended', dismiss);
+        v.addEventListener('error', dismiss);       // e.g. codec unsupported -> don't trap the user
+        v.src = 'assets/' + wf + '/intro.mp4';
+        var pr = v.play(); if (pr && pr.catch) pr.catch(function () {});
+        setTimeout(function () { if (v.readyState < 2) dismiss(); }, 4000); // missing/stalled video safety
+      })();
+    </script>
+  </body>
+</html>

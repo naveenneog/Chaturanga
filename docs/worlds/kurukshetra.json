@@ -1,0 +1,80 @@
+{
+  "id": "kurukshetra",
+  "title": "Kurukshetra — the Field of Dharma",
+  "subtitle": "the Mahabharata war as a game of duty and choice",
+  "assets": "assets/kurukshetra",
+  "voice": { "web": "en-IN", "azure": "en-IN-Arjun:DragonHDLatestNeural" },
+  "sides": { "white": "Pandavas", "black": "Kauravas" },
+  "theme": {
+    "bg": "#1a0f08",
+    "panel": "#241308",
+    "accent": "#e8a33d",
+    "light": "#d9b98a",
+    "dark": "#6b4423",
+    "whiteArmy": "#efe4c8",
+    "blackArmy": "#3a2418",
+    "text": "#f4e6cd",
+    "muted": "#b79b74",
+    "font": "'Georgia', 'Noto Serif', serif"
+  },
+  "pieces": {
+    "raja": {
+      "name": "Raja", "en": "King", "glyph": "♚",
+      "moral": "Responsibility — the Self at the centre",
+      "teaching": "As the Raja, so the kingdom. Guard the centre of your being; when the Self falls, all is lost."
+    },
+    "mantri": {
+      "name": "Mantri", "en": "Minister · Counsellor", "glyph": "♛",
+      "moral": "Wisdom in counsel",
+      "teaching": "The Mantri ranges the whole field, yet power without dharma is ruin. Wise counsel protects the Raja before it conquers.",
+      "fall": "When the wise counsellor falls, the Raja stands alone against the storm."
+    },
+    "ratha": {
+      "name": "Ratha", "en": "Chariot", "glyph": "♜",
+      "moral": "Commitment to the path",
+      "teaching": "The chariot does not waver. Choose your line and move with force — momentum is built by not turning back.",
+      "fall": "A broken chariot teaches that speed without protection ends in the dust."
+    },
+    "gaja": {
+      "name": "Gaja", "en": "Elephant", "glyph": "♝",
+      "moral": "Measured strength, long memory",
+      "teaching": "The Gaja treads its own diagonal with patience. True strength remembers its restraint and strikes only along its dharma.",
+      "fall": "The great elephant falls, and the field learns that pride is heavier than tusks."
+    },
+    "ashva": {
+      "name": "Ashva", "en": "Horse · Cavalry", "glyph": "♞",
+      "moral": "The unconventional leap",
+      "teaching": "When the straight path is blocked, the Ashva leaps. Think beyond the line; the horse alone crosses what others cannot.",
+      "fall": "A fallen horse reminds us that cleverness, unguarded, is still mortal."
+    },
+    "padati": {
+      "name": "Padati", "en": "Foot-soldier", "glyph": "♟",
+      "moral": "Steadfast duty — the never-retreating march",
+      "teaching": "The Padati never steps backward. One square at a time, the humblest soldier does the work that wins the war.",
+      "fall": "A foot-soldier falls so the line may hold — no sacrifice on the field of dharma is small."
+    }
+  },
+  "pawnTeachings": [
+    "The foot-soldier never steps backward — in life, keep facing your dharma.",
+    "One square at a time, the humblest can reach the farthest rank.",
+    "Every Padati carries a Mantri's staff within: cross the whole field and be reborn greater.",
+    "Hold the line beside your brothers — a shield-wall outlasts any lone hero.",
+    "The first step is the hardest; after it, the march is simply duty.",
+    "Fear at the front is natural; courage is marching anyway.",
+    "You cannot un-take a step — weigh each advance, then commit fully.",
+    "A pawn guards more than it captures; steady presence is its own protection.",
+    "The sacrifice of the small can open the victory of the whole.",
+    "Act without clinging to the fruit — march, and let the field unfold as it will."
+  ],
+  "captureLines": [
+    "On the field of dharma, even a righteous act may fell a kinsman — this was Arjuna's sorrow.",
+    "The victor mourns too; the wheel of karma turns for both hands.",
+    "A piece falls and the game advances — attachment is the only true loss.",
+    "Do your duty without hatred; the fallen also played their part in the whole.",
+    "Strike when dharma calls, but never with cruelty in the heart."
+  ],
+  "promotionLine": "The steadfast Padati, having crossed the whole field of dharma, is reborn a Mantri. Perseverance is the quiet road to greatness.",
+  "checkLine": "The Raja is threatened — gather your forces and protect the centre of your being.",
+  "checkmateTitle": "Vijaya — Victory on the Field",
+  "checkmateLine": "The war of Kurukshetra ends. Reflect, as Arjuna did: what was won, and at what cost?"
+}
