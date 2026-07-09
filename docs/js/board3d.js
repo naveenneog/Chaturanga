@@ -8,6 +8,7 @@ import { makePiece } from './pieces3d.js';
 import { bestMove as bestMoveMain, LEVELS, levelById } from './engine.js';
 import { hint as hintMain, reviewMove as reviewMain, openingNote, openingStep } from './coach.js';
 import { openingById } from './openings.js';
+import * as audio from './audio.js';
 
 const $ = (s) => document.querySelector(s);
 const FILES = 'abcdefgh';
@@ -46,6 +47,11 @@ async function main() {
   let training = false;
   const isHumanTurn = () => MODE === 'hotseat' || game.turn() === HUMAN;
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  // unlock + start the ambience on the first user gesture (autoplay policy)
+  let audioReady = false;
+  const unlockAudio = () => { if (audioReady) return; audioReady = true; try { audio.unlock(worldFile); } catch { /* ignore */ } };
+  window.addEventListener('pointerdown', unlockAudio, { once: true, capture: true });
+  window.addEventListener('keydown', unlockAudio, { once: true, capture: true });
 
   const game = newGame();
 
@@ -124,15 +130,17 @@ async function main() {
   boardGroup.add(plinth);
   const frame = new THREE.Mesh(
     new THREE.BoxGeometry(8.7, 0.16, 8.7),
-    new THREE.MeshStandardMaterial({ color: hexInt(T.accent || '#e8a33d'), roughness: 0.6, metalness: 0.3 }),
+    new THREE.MeshStandardMaterial({ color: hexInt(T.accent || '#e8a33d'), roughness: 0.78, metalness: 0.08 }),
   );
-  frame.position.y = -0.04; frame.receiveShadow = true;
+  frame.position.y = -0.06; frame.receiveShadow = true;   // recessed below the square tops so the gold rim can't creep up
   boardGroup.add(frame);
 
-  // 8x8 squares as two InstancedMeshes (light + dark) with generated stone/wood textures
-  const sqGeo = new THREE.BoxGeometry(0.98, 0.08, 0.98);
-  const lightMat = new THREE.MeshStandardMaterial({ color: hexInt(T.light || '#d9b98a'), roughness: 0.55, metalness: 0.05, envMapIntensity: 0.6 });
-  const darkMat = new THREE.MeshStandardMaterial({ color: hexInt(T.dark || '#6b4423'), roughness: 0.5, metalness: 0.05, envMapIntensity: 0.6 });
+  // 8x8 squares as two InstancedMeshes (light + dark) with generated stone/wood textures.
+  // Full 1.0 cells (no inter-square gaps -> no gold showing through) and thick (0.22) so a
+  // grazing view sees the square's own side, not the frame's reflection. Top stays at y=0.04.
+  const sqGeo = new THREE.BoxGeometry(1.0, 0.22, 1.0);
+  const lightMat = new THREE.MeshStandardMaterial({ color: hexInt(T.light || '#d9b98a'), roughness: 0.62, metalness: 0.02, envMapIntensity: 0.35 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: hexInt(T.dark || '#6b4423'), roughness: 0.58, metalness: 0.02, envMapIntensity: 0.35 });
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
   const applyTex = (mat, file) => texLoader.load(`${ASSET_BASE}/${file}`, (t) => {
     t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = maxAniso;
@@ -147,7 +155,7 @@ async function main() {
   let li = 0, di = 0;
   for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
     const p = posOf(col, row);
-    dummy.position.set(p.x, 0, p.z); dummy.updateMatrix();
+    dummy.position.set(p.x, -0.07, p.z); dummy.updateMatrix();  // thick square, top kept at y=0.04
     if ((col + row) % 2 === 0) darkIM.setMatrixAt(di++, dummy.matrix);
     else lightIM.setMatrixAt(li++, dummy.matrix);
   }
@@ -177,7 +185,10 @@ async function main() {
   const shadowGeo = new THREE.PlaneGeometry(0.92, 0.92);
 
   // ---------- carved glTF models (Blender) with a procedural fallback ----------
-  const MODELS = {};
+  // Two armies: MODELS.w (first side) and MODELS.b (second side). A world may ship a distinct
+  // opposing army under <assets>/models_dark/ ("modelsDark": true) — e.g. Ramayana pairs Rama's
+  // vanaras (white) against Ravana's rakshasas (black). Otherwise both sides share one sculpt set.
+  const MODELS = { w: {}, b: {} };
   const TARGET_H = { padati: 0.72, gaja: 0.86, ashva: 0.94, ratha: 0.8, mantri: 1.0, raja: 1.14 };
   const loader = new GLTFLoader();
   const loadGLB = (url) => new Promise((res, rej) => loader.load(url, res, undefined, rej));
@@ -191,21 +202,21 @@ async function main() {
     const c = new THREE.Vector3(); box.getCenter(c);
     obj.position.set(-c.x, -box.min.y, -c.z);
   }
+  async function loadOne(url, k) {
+    const gltf = await loadGLB(url);
+    normalize(gltf.scene, TARGET_H[k]);
+    const t = new THREE.Group(); t.add(gltf.scene);
+    return t;
+  }
   async function loadModels() {
     const mBase = world.assets || `assets/${worldFile}`;
+    const whiteSrc = (k) => (world.models ? [`${mBase}/models/${k}.glb`, `assets/models/${k}.glb`] : [`assets/models/${k}.glb`]);
+    const blackSrc = (k) => (world.modelsDark ? [`${mBase}/models_dark/${k}.glb`] : []);
     await Promise.all(Object.keys(TARGET_H).map(async (k) => {
-      // worlds that declare "models": true carry their own army under <assets>/models/;
-      // otherwise use the shared army (avoids 404s for shared-model worlds)
-      const sources = world.models ? [`${mBase}/models/${k}.glb`, `assets/models/${k}.glb`] : [`assets/models/${k}.glb`];
-      for (const url of sources) {
-        try {
-          const gltf = await loadGLB(url);
-          normalize(gltf.scene, TARGET_H[k]);
-          const t = new THREE.Group(); t.add(gltf.scene);
-          MODELS[k] = t;
-          break;
-        } catch { /* try next source */ }
-      }
+      for (const url of whiteSrc(k)) { try { MODELS.w[k] = await loadOne(url, k); break; } catch { /* next */ } }
+      let dark = false;
+      for (const url of blackSrc(k)) { try { MODELS.b[k] = await loadOne(url, k); dark = true; break; } catch { /* next */ } }
+      if (!dark) MODELS.b[k] = MODELS.w[k];   // no distinct opposing army -> reuse the sculpt, tinted dark
     }));
   }
   // pieces with a clear front (muzzle / spear) point at +X in their model
@@ -220,7 +231,7 @@ async function main() {
   const IVORY = new THREE.Color(0xffffff);
   const ROSEWOOD = new THREE.Color(0x4a3120);
   function pieceFor(key, color) {
-    const t = MODELS[key];
+    const t = MODELS[color === 'w' ? 'w' : 'b'][key] || MODELS.w[key];
     if (!t) return makePiece(key, color === 'w' ? whiteMat : blackMat);
     const g = t.clone(true);
     const tint = color === 'w' ? IVORY : ROSEWOOD;
@@ -315,6 +326,7 @@ async function main() {
     const fenBefore = game.fen();
     const mv = game.move({ from, to, promotion: opt.promotion || 'q' });
     if (!mv) return;
+    audio.sfx(mv.flags.includes('k') || mv.flags.includes('q') ? 'castle' : mv.captured ? 'capture' : mv.flags.includes('p') ? 'promote' : 'move');
     busy = true;
     clearMarkers();
     const mesh = meshBySquare.get(from);
@@ -334,6 +346,7 @@ async function main() {
     }
     syncPieces(); // reconcile castling / en-passant / promotion
     updateCheck(); updateCaptured(); updateUndo();
+    if (game.inCheck() && !game.isCheckmate()) setTimeout(() => audio.sfx('check'), 260);
     if (MODE === 'hotseat' && autoFlip) { flip = game.turn() === 'b'; applyPreset(PRESETS[presetIdx]); }
     const state = { check: game.inCheck(), checkmate: game.isCheckmate() };
     reveal(moveMoment(world, mv, state));
@@ -444,6 +457,7 @@ async function main() {
     $('#overTitle').textContent = title;
     $('#overLine').textContent = line;
     over.classList.add('show');
+    audio.sfx('win');
     if (line) speak(line);
   }
   function fadeOut(g) {
@@ -482,6 +496,7 @@ async function main() {
   function select(square) {
     const piece = game.get(square);
     if (!showMoves(square)) { clearMarkers(); }
+    audio.sfx('select');
     reveal(selectMoment(world, piece.type), true);
     inspectPiece(piece.type, piece.color);            // rotating render + movement pattern
     if (eyeMode) setEye(square, piece.color, piece.type);
@@ -505,7 +520,25 @@ async function main() {
     if (!quiet || m.kind === 'select') speak(text);
   }
   let muted = false;
+  // Pre-generated DragonHD Indian-English narration (Azure). Falls back to the browser voice.
+  let voiceManifest = {};
+  let narration = null;
+  fetch(`${ASSET_BASE}/voice/voice.json`).then((r) => (r.ok ? r.json() : {})).then((m) => { voiceManifest = m || {}; }).catch(() => {});
   function speak(text) {
+    if (muted || !text) return;
+    const file = voiceManifest[text];
+    if (file) {
+      try {
+        speechSynthesis?.cancel?.();
+        if (narration) { narration.pause(); narration = null; }
+        narration = new Audio(`${ASSET_BASE}/voice/${file}`);
+        narration.play().then(() => {}).catch(() => speakBrowser(text));
+        return;
+      } catch { /* fall through to the browser voice */ }
+    }
+    speakBrowser(text);
+  }
+  function speakBrowser(text) {
     if (muted || !text || !window.speechSynthesis) return;
     try {
       speechSynthesis.cancel();
@@ -716,7 +749,12 @@ async function main() {
     autoFlip = !autoFlip; $('#autoflipBtn').classList.toggle('on', autoFlip);
     if (autoFlip && MODE === 'hotseat') { flip = game.turn() === 'b'; applyPreset(PRESETS[presetIdx]); }
   });
-  $('#muteBtn').addEventListener('click', () => { muted = !muted; if (muted) speechSynthesis?.cancel?.(); $('#muteBtn').innerHTML = muted ? '🔇 Voice' : '🔊 Voice'; $('#muteBtn').classList.toggle('on', !muted); });
+  $('#muteBtn').addEventListener('click', () => { muted = !muted; if (muted) { speechSynthesis?.cancel?.(); if (narration) { narration.pause(); narration = null; } } $('#muteBtn').innerHTML = muted ? '🔇 Voice' : '🔊 Voice'; $('#muteBtn').classList.toggle('on', !muted); });
+  // music + sound-effects toggles (sound design)
+  $('#musicBtn')?.addEventListener('click', () => { const on = !audio.isMusicOn(); audio.setMusic(on); $('#musicBtn').innerHTML = on ? '🎵 Music' : '🎵̶ Music off'; $('#musicBtn').classList.toggle('on', on); });
+  $('#soundBtn')?.addEventListener('click', () => { const on = !audio.isSfxOn(); audio.setSfx(on); $('#soundBtn').innerHTML = on ? '🔔 Sounds' : '🔕 Sounds'; $('#soundBtn').classList.toggle('on', on); });
+  // subtle click on any HUD/menu button
+  document.querySelectorAll('#hud button, #more button').forEach((b) => b.addEventListener('click', () => audio.sfx('ui')));
   $('#hintBtn')?.addEventListener('click', async () => {
     if (busy || aiThinking || training || game.isGameOver() || (vsAI && !isHumanTurn())) return;
     const h = await think('hint', { fen: game.fen(), level: LEVEL.id });
@@ -738,6 +776,10 @@ async function main() {
   $('#trPause')?.addEventListener('click', () => { trainerPaused = !trainerPaused; $('#trPause').textContent = trainerPaused ? '▶ Resume' : '⏸ Pause'; });
   $('#trExit')?.addEventListener('click', () => { trainerExit = true; trainerPaused = false; });
   document.querySelectorAll('nav a').forEach((a) => { a.href = `${a.getAttribute('href').split('?')[0]}?world=${worldFile}`; });
+  // reflect persisted audio prefs
+  $('#musicBtn')?.classList.toggle('on', audio.isMusicOn()); if (!audio.isMusicOn() && $('#musicBtn')) $('#musicBtn').innerHTML = '🎵̶ Music off';
+  $('#soundBtn')?.classList.toggle('on', audio.isSfxOn()); if (!audio.isSfxOn() && $('#soundBtn')) $('#soundBtn').innerHTML = '🔕 Sounds';
+  $('#muteBtn')?.classList.toggle('on', !muted);
 
   updateStatus(); updateUndo(); updateCaptured();
   if (TRAIN) runTrainer(TRAIN);

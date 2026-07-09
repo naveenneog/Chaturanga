@@ -74,6 +74,14 @@
     <script type="module">
       import { LEVELS } from './js/engine.js';
       import { OPENINGS } from './js/openings.js';
+      import * as audio from './js/audio.js';
+
+      // subtle click feedback + start the ambience on first interaction
+      let unlocked = false;
+      document.addEventListener('pointerdown', (e) => {
+        if (!unlocked) { unlocked = true; try { audio.unlock('kurukshetra'); } catch (err) {} }
+        if (e.target.closest('button, .world, .opt, .lvl, .op')) audio.sfx('ui');
+      }, true);
 
       const WORLD_IDS = ['kurukshetra', 'ramayana'];
       const state = { world: 'kurukshetra', mode: 'ai', side: 'w', level: 3 };
