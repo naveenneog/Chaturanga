@@ -253,45 +253,47 @@ async function main() {
   // cycle a set of preset materials. Each style multiplies the baked concept texture toward a tint
   // and sets roughness/metalness/emissive so an army can read as ivory, jade, bronze, or radiant.
   const hx = (h, d) => new THREE.Color(hexInt(h || d));
+  // A style keeps EITHER the carved concept texture (themed/ivory — `tex:true`) or drops it for a
+  // clean SOLID themed colour (all the warrior styles) so no ivory highlights bleed through. Glow is
+  // a fresnel EDGE glow (`rim`) + a soft inner `emissive`, which keeps the piece's 3D shading intact
+  // (uniform emissive would flatten it). Fields: color, roughness, metalness, clearcoat, env,
+  // emissive, emissiveInt, rim, rimStr, rimPow.
   const DEFAULT_STYLE = {
-    white: { tint: '#fff6e2', roughness: 0.40, metalness: 0.06, emissive: '#4a3414', emissiveIntensity: 0.30, envMapIntensity: 1.20, clearcoat: 0.45 },
-    black: { tint: '#5c3a20', roughness: 0.44, metalness: 0.10, emissive: '#3a1606', emissiveIntensity: 0.28, envMapIntensity: 1.10, clearcoat: 0.50 },
+    white: { color: '#fff2d8', roughness: 0.40, metalness: 0.08, clearcoat: 0.5, env: 1.2, emissive: '#3a2a10', emissiveInt: 0.22, rim: '#ffdca0', rimStr: 0.9, rimPow: 3.2 },
+    black: { color: '#6a4326', roughness: 0.44, metalness: 0.10, clearcoat: 0.5, env: 1.1, emissive: '#2a1204', emissiveInt: 0.20, rim: '#e8a860', rimStr: 0.9, rimPow: 3.2 },
   };
-  // Warrior Styles the player picks from a palette. `emissive` (army-coloured, additive) is the
-  // strongest lever — with the bloom pass it makes BOTH armies GLOW, even the near-black one, where
-  // a multiplied tint alone can never show. `swatch` = the two chips shown in the style picker.
   const STYLE_PRESETS = [
-    { name: 'Themed', themed: true, swatch: [T.whiteArmy || '#efe4c8', T.blackArmy || '#3a2418'] },
-    { name: 'Ivory & Ebony', swatch: ['#efe4c8', '#241812'],
-      white: { tint: '#efe4c8', roughness: 0.40, metalness: 0.0, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.10, clearcoat: 0.5 },
-      black: { tint: '#241812', roughness: 0.34, metalness: 0.05, emissive: '#000000', emissiveIntensity: 0, envMapIntensity: 1.0, clearcoat: 0.6 } },
-    { name: 'Divine Radiance', glow: true, swatch: ['#ffd75e', '#b46cff'],
-      white: { tint: '#ffe9b0', roughness: 0.34, metalness: 0.25, emissive: '#ffb020', emissiveIntensity: 1.05, envMapIntensity: 1.5, clearcoat: 0.6 },
-      black: { tint: '#c9a6ff', roughness: 0.30, metalness: 0.30, emissive: '#8a2bff', emissiveIntensity: 1.20, envMapIntensity: 1.4, clearcoat: 0.7 } },
-    { name: 'Blood & Iron', glow: true, swatch: ['#ff5a3c', '#c01818'],
-      white: { tint: '#ffcaa8', roughness: 0.36, metalness: 0.45, emissive: '#ff4a1e', emissiveIntensity: 0.95, envMapIntensity: 1.5, clearcoat: 0.4 },
-      black: { tint: '#7a2418', roughness: 0.34, metalness: 0.55, emissive: '#e01212', emissiveIntensity: 1.15, envMapIntensity: 1.3, clearcoat: 0.4 } },
-    { name: 'Jade Warrior', glow: true, swatch: ['#57e39a', '#11a67e'],
-      white: { tint: '#b7f0d0', roughness: 0.20, metalness: 0.20, emissive: '#1fbf6e', emissiveIntensity: 0.95, envMapIntensity: 1.5, clearcoat: 0.85 },
-      black: { tint: '#124a3c', roughness: 0.18, metalness: 0.28, emissive: '#0bd08a', emissiveIntensity: 1.10, envMapIntensity: 1.3, clearcoat: 0.9 } },
-    { name: 'Ember Forge', glow: true, swatch: ['#ff9a2e', '#ff3b12'],
-      white: { tint: '#ffdca6', roughness: 0.42, metalness: 0.15, emissive: '#ff8a1a', emissiveIntensity: 1.15, envMapIntensity: 1.2, clearcoat: 0.3 },
-      black: { tint: '#3a1c12', roughness: 0.40, metalness: 0.20, emissive: '#ff2e08', emissiveIntensity: 1.25, envMapIntensity: 1.1, clearcoat: 0.3 } },
-    { name: 'Celestial Azure', glow: true, swatch: ['#4aa8ff', '#7b48ff'],
-      white: { tint: '#bfe0ff', roughness: 0.26, metalness: 0.40, emissive: '#2f7bff', emissiveIntensity: 1.00, envMapIntensity: 1.6, clearcoat: 0.7 },
-      black: { tint: '#4632a0', roughness: 0.24, metalness: 0.45, emissive: '#6a2aff', emissiveIntensity: 1.20, envMapIntensity: 1.4, clearcoat: 0.75 } },
-    { name: 'Emerald & Ruby', glow: true, swatch: ['#22d36a', '#ff2a56'],
-      white: { tint: '#9ff0bd', roughness: 0.24, metalness: 0.30, emissive: '#12c257', emissiveIntensity: 1.00, envMapIntensity: 1.5, clearcoat: 0.8 },
-      black: { tint: '#5a0f22', roughness: 0.22, metalness: 0.35, emissive: '#ff1442', emissiveIntensity: 1.15, envMapIntensity: 1.4, clearcoat: 0.85 } },
-    { name: 'Royal Amethyst', glow: true, swatch: ['#e06bff', '#7a2ad6'],
-      white: { tint: '#f0c4ff', roughness: 0.28, metalness: 0.30, emissive: '#d23bff', emissiveIntensity: 1.00, envMapIntensity: 1.5, clearcoat: 0.8 },
-      black: { tint: '#3a1466', roughness: 0.26, metalness: 0.38, emissive: '#7a1ee0', emissiveIntensity: 1.15, envMapIntensity: 1.3, clearcoat: 0.85 } },
-    { name: 'Bronze & Gold', swatch: ['#f4c667', '#8a5a24'],   // metallic finish
-      white: { tint: '#f4c667', roughness: 0.26, metalness: 0.95, emissive: '#3a2200', emissiveIntensity: 0.25, envMapIntensity: 1.9, clearcoat: 0.2 },
-      black: { tint: '#8a5a24', roughness: 0.32, metalness: 0.98, emissive: '#241400', emissiveIntensity: 0.22, envMapIntensity: 1.7, clearcoat: 0.2 } },
-    { name: 'Pearl & Obsidian', swatch: ['#f5efe6', '#16161e'],  // glossy finish
-      white: { tint: '#f5efe6', roughness: 0.10, metalness: 0.12, emissive: '#20201a', emissiveIntensity: 0.18, envMapIntensity: 1.8, clearcoat: 1.0 },
-      black: { tint: '#16161e', roughness: 0.08, metalness: 0.25, emissive: '#12122a', emissiveIntensity: 0.28, envMapIntensity: 1.7, clearcoat: 1.0 } },
+    { name: 'Themed', themed: true, tex: true, swatch: [T.whiteArmy || '#efe4c8', T.blackArmy || '#3a2418'] },
+    { name: 'Ivory & Ebony', tex: true, swatch: ['#efe4c8', '#241812'],
+      white: { color: '#f0e6cc', roughness: 0.40, metalness: 0.0, clearcoat: 0.5, env: 1.1 },
+      black: { color: '#2a1c14', roughness: 0.34, metalness: 0.05, clearcoat: 0.6, env: 1.0 } },
+    { name: 'Divine Radiance', glow: true, swatch: ['#ffcf5a', '#8a4dff'],
+      white: { color: '#f6c343', roughness: 0.30, metalness: 0.55, clearcoat: 0.6, env: 1.7, emissive: '#c98a10', emissiveInt: 0.35, rim: '#fff0b0', rimStr: 2.6, rimPow: 2.6 },
+      black: { color: '#7a41e6', roughness: 0.28, metalness: 0.45, clearcoat: 0.7, env: 1.6, emissive: '#4a18b0', emissiveInt: 0.40, rim: '#d9b6ff', rimStr: 2.6, rimPow: 2.6 } },
+    { name: 'Blood & Iron', glow: true, swatch: ['#ff6a3c', '#c81818'],
+      white: { color: '#e8703c', roughness: 0.32, metalness: 0.6, clearcoat: 0.4, env: 1.6, emissive: '#c0340e', emissiveInt: 0.35, rim: '#ffb070', rimStr: 2.4, rimPow: 2.8 },
+      black: { color: '#9a1414', roughness: 0.30, metalness: 0.65, clearcoat: 0.4, env: 1.4, emissive: '#8a0a0a', emissiveInt: 0.45, rim: '#ff5a3c', rimStr: 2.6, rimPow: 2.6 } },
+    { name: 'Jade Warrior', glow: true, swatch: ['#3ad686', '#0f9a72'],
+      white: { color: '#37c07e', roughness: 0.22, metalness: 0.30, clearcoat: 0.9, env: 1.6, emissive: '#0f7a4a', emissiveInt: 0.35, rim: '#a6f5cf', rimStr: 2.4, rimPow: 2.8 },
+      black: { color: '#0d5a44', roughness: 0.20, metalness: 0.35, clearcoat: 0.9, env: 1.4, emissive: '#0a7a54', emissiveInt: 0.45, rim: '#3ff0a6', rimStr: 2.6, rimPow: 2.6 } },
+    { name: 'Ember Forge', glow: true, swatch: ['#ff9a2e', '#e33112'],
+      white: { color: '#ff9a30', roughness: 0.38, metalness: 0.30, clearcoat: 0.3, env: 1.4, emissive: '#e0600e', emissiveInt: 0.45, rim: '#ffd070', rimStr: 2.8, rimPow: 2.5 },
+      black: { color: '#b02810', roughness: 0.36, metalness: 0.35, clearcoat: 0.3, env: 1.2, emissive: '#c02008', emissiveInt: 0.50, rim: '#ff6a20', rimStr: 2.8, rimPow: 2.5 } },
+    { name: 'Celestial Azure', glow: true, swatch: ['#3aa0ff', '#6a3cff'],
+      white: { color: '#3f9bff', roughness: 0.26, metalness: 0.5, clearcoat: 0.7, env: 1.7, emissive: '#1a5fe0', emissiveInt: 0.35, rim: '#bfe0ff', rimStr: 2.6, rimPow: 2.6 },
+      black: { color: '#5a34d6', roughness: 0.24, metalness: 0.5, clearcoat: 0.75, env: 1.5, emissive: '#3a18c0', emissiveInt: 0.45, rim: '#a68cff', rimStr: 2.6, rimPow: 2.6 } },
+    { name: 'Emerald & Ruby', glow: true, swatch: ['#1fce67', '#ff2a56'],
+      white: { color: '#1fce67', roughness: 0.24, metalness: 0.4, clearcoat: 0.85, env: 1.6, emissive: '#0e9a4c', emissiveInt: 0.35, rim: '#9ff0bd', rimStr: 2.5, rimPow: 2.7 },
+      black: { color: '#c8143c', roughness: 0.22, metalness: 0.45, clearcoat: 0.85, env: 1.5, emissive: '#a00e2c', emissiveInt: 0.45, rim: '#ff5a7e', rimStr: 2.6, rimPow: 2.6 } },
+    { name: 'Royal Amethyst', glow: true, swatch: ['#d24dff', '#7a2ad6'],
+      white: { color: '#c94dff', roughness: 0.28, metalness: 0.4, clearcoat: 0.8, env: 1.6, emissive: '#9a1ed0', emissiveInt: 0.35, rim: '#f0c4ff', rimStr: 2.5, rimPow: 2.7 },
+      black: { color: '#6a1ec8', roughness: 0.26, metalness: 0.45, clearcoat: 0.8, env: 1.4, emissive: '#5a12b0', emissiveInt: 0.45, rim: '#c48cff', rimStr: 2.6, rimPow: 2.6 } },
+    { name: 'Bronze & Gold', swatch: ['#f4c667', '#8a5a24'],   // polished metal, no glow
+      white: { color: '#f4c667', roughness: 0.24, metalness: 0.98, clearcoat: 0.2, env: 2.0, rim: '#fff0c0', rimStr: 0.8, rimPow: 3.5 },
+      black: { color: '#7a4e1e', roughness: 0.30, metalness: 1.0, clearcoat: 0.2, env: 1.8, rim: '#e8b060', rimStr: 0.8, rimPow: 3.5 } },
+    { name: 'Pearl & Obsidian', swatch: ['#f5efe6', '#16161e'],  // glossy finish, no glow
+      white: { color: '#f5efe6', roughness: 0.08, metalness: 0.15, clearcoat: 1.0, env: 1.9, rim: '#ffffff', rimStr: 0.7, rimPow: 3.5 },
+      black: { color: '#16161e', roughness: 0.06, metalness: 0.30, clearcoat: 1.0, env: 1.8, rim: '#8a8ac0', rimStr: 1.0, rimPow: 3.0 } },
   ];
   let styleIdx = 0;
   try { const s = +localStorage.getItem('chaturanga_style'); if (s >= 0 && s < STYLE_PRESETS.length) styleIdx = s; } catch { /* ignore */ }
@@ -301,35 +303,68 @@ async function main() {
     if (preset.themed) return (world.pieceStyle && world.pieceStyle[side]) || DEFAULT_STYLE[side];
     return preset[side];
   }
-  // Apply a style's finish + glow to one material. `hasMap` keeps the baked concept texture (the
-  // tint multiplies it); without a map the tint becomes the base colour. Emissive is set on every
-  // material so glow presets are visible on BOTH armies, including the near-black one.
-  function applyStyle(m, st, hasMap, color) {
-    m.color = hasMap ? hx(st.tint, '#ffffff') : hx(st.tint, color === 'w' ? '#efe4c8' : '#241812');
-    m.roughness = st.roughness ?? 0.4;
-    m.metalness = st.metalness ?? 0.05;
-    m.emissive = hx(st.emissive, '#000000');
-    m.emissiveIntensity = st.emissiveIntensity || 0;
-    m.envMapIntensity = st.envMapIntensity ?? 1.0;
-    if ('clearcoat' in m) m.clearcoat = st.clearcoat ?? 0.4;
+  const keepsTexture = () => { const p = STYLE_PRESETS[styleIdx]; return !!(p.themed || p.tex); };
+
+  // Fresnel EDGE glow injected into a material: the silhouette glows (and blooms) while the body
+  // keeps its real diffuse/specular shading — so pieces read as sculpted 3D, not flat glowing blobs.
+  function addRim(m, rimColor, strength, power, tag) {
+    const col = hx(rimColor, '#ffffff');
+    m.onBeforeCompile = (shader) => {
+      shader.uniforms.uRimColor = { value: col };
+      shader.uniforms.uRimStrength = { value: strength };
+      shader.uniforms.uRimPower = { value: power || 3.0 };
+      shader.fragmentShader = 'uniform vec3 uRimColor;\nuniform float uRimStrength;\nuniform float uRimPower;\n'
+        + shader.fragmentShader.replace('#include <emissivemap_fragment>',
+          '#include <emissivemap_fragment>\n'
+          + 'float _rf = pow( 1.0 - saturate( dot( normalize( normal ), normalize( vViewPosition ) ) ), uRimPower );\n'
+          + 'totalEmissiveRadiance += uRimColor * _rf * uRimStrength;');
+    };
+    m.customProgramCacheKey = () => 'chatrim_' + tag;   // keep rim/non-rim + tex/solid programs distinct
+  }
+
+  // Build one styled material. Textured styles (themed / ivory, `keepTex`) keep the carved concept
+  // map and tint it; every other style DROPS the ivory photo for a clean SOLID themed colour — so no
+  // ivory highlights bleed through — and gets full PBR (metal/clearcoat/env) plus the fresnel rim.
+  function makeMaterial(st, keepTex, srcMat, color) {
+    let m;
+    if (keepTex && srcMat && srcMat.map) {
+      m = srcMat.clone();
+      m.color = hx(st.color || st.tint, '#ffffff');
+      m.roughness = st.roughness ?? 0.4;
+      m.metalness = st.metalness ?? 0.06;
+      m.emissive = hx(st.emissive, '#000000');
+      m.emissiveIntensity = st.emissiveInt ?? st.emissiveIntensity ?? 0;
+      m.envMapIntensity = st.env ?? st.envMapIntensity ?? 1.1;
+      if ('clearcoat' in m) m.clearcoat = st.clearcoat ?? 0.45;
+    } else {
+      m = new THREE.MeshPhysicalMaterial({
+        color: hx(st.color || st.tint, color === 'w' ? '#e8e8e8' : '#2a2a2a'),
+        roughness: st.roughness ?? 0.32,
+        metalness: st.metalness ?? 0.2,
+        clearcoat: st.clearcoat ?? 0.5,
+        clearcoatRoughness: 0.25,
+        emissive: hx(st.emissive, '#000000'),
+        emissiveIntensity: st.emissiveInt ?? st.emissiveIntensity ?? 0,
+        envMapIntensity: st.env ?? st.envMapIntensity ?? 1.3,
+        sheen: 0.25,
+        sheenColor: hx(st.rim || st.color, '#ffffff'),
+      });
+    }
+    if (st.rimStr) addRim(m, st.rim || st.color, st.rimStr, st.rimPow, keepTex ? 'tex' : 'solid');
     m.needsUpdate = true;
     return m;
   }
+
   function pieceFor(key, color) {
     const t = MODELS[color === 'w' ? 'w' : 'b'][key] || MODELS.w[key];
     const st = styleFor(color);
-    if (!t) {
-      const base = applyStyle((color === 'w' ? whiteMat : blackMat).clone(), st, false, color);
-      return makePiece(key, base);
-    }
+    const keepTex = keepsTexture();
+    if (!t) return makePiece(key, makeMaterial(st, false, null, color));
     const g = t.clone(true);
     g.traverse((n) => {
       if (!n.isMesh) return;
       n.castShadow = true;
-      const hasMap = !!(n.material && n.material.map);
-      const m = (n.material && n.material.isMaterial) ? n.material.clone() : new THREE.MeshPhysicalMaterial();
-      applyStyle(m, st, hasMap, color);
-      n.material = m;
+      n.material = makeMaterial(st, keepTex, n.material, color);
     });
     g.userData.key = key;
     return g;
