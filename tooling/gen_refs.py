@@ -117,6 +117,38 @@ WORLDS = {
             "back, richly robed and jewelled — the ideal king and heart of the army."
         ),
     },
+    "ramayana_dark": {
+        "padati": (
+            "A fierce rakshasa (demon) foot-soldier of Ravana's army of Lanka: a muscular horned "
+            "demon-warrior with fanged snarling face, spiked armour and a bone necklace, gripping a "
+            "heavy curved cleaver, standing menacing and battle-ready."
+        ),
+        "ashva": (
+            "A leaping rakshasa demon-champion of Lanka caught mid-leap on one bent leg, one clawed "
+            "arm raised high with a spiked mace, fanged and horned, a tattered cape streaming behind "
+            "— full of savage upward motion."
+        ),
+        "gaja": (
+            "A colossal armoured demon-titan of Lanka evoking the giant Kumbhakarna: an immense "
+            "hulking horned rakshasa on all fours draped in spiked war-armour and jewelled plates, a "
+            "small ornate canopied howdah on its broad back — monstrous, ancient and terrible."
+        ),
+        "ratha": (
+            "Ravana's dark ornate war-chariot: a single menacing curved chariot car on two large "
+            "spiked spoked wheels drawn by a pair of fearsome demon-steeds, a tall black pennant with "
+            "a skull emblem and a great bow across the car — sinister and proud."
+        ),
+        "mantri": (
+            "The rakshasa prince Indrajit (Meghnad), Ravana's mighty warrior-son: a tall crowned "
+            "demon-prince with a fierce noble face, spiked ornate armour and jewellery, drawing a "
+            "great war-bow — the most dangerous counsellor-general of Lanka."
+        ),
+        "raja": (
+            "Ravana, the ten-headed demon-king of Lanka (Dashanana): a mighty crowned rakshasa "
+            "emperor with ten fierce fanged heads and many arms bearing weapons, in magnificent "
+            "spiked golden war-armour, standing sovereign and terrible — the heart of the demon host."
+        ),
+    },
 }
 
 ORDER = ["padati", "ashva", "gaja", "ratha", "mantri", "raja"]
