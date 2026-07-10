@@ -8,14 +8,19 @@ import { UnrealBloomPass } from '../vendor/UnrealBloomPass.js';
 import { OutputPass } from '../vendor/OutputPass.js';
 
 const HEROES = [
-  { key: 'raja',   name: 'Rājā',   role: 'The King',         line: 'Where the king stands, the whole host finds its purpose.', col: { base: '#f6c343', emis: '#c98a10', rim: '#fff0b0', metal: 0.55 } },
-  { key: 'mantri', name: 'Mantrī', role: 'The Minister',     line: 'Wisest of the four-army host — its counsel ranges the whole field.', col: { base: '#c94dff', emis: '#9a1ed0', rim: '#f0c4ff', metal: 0.45 } },
-  { key: 'ratha',  name: 'Ratha',  role: 'The Chariot',      line: 'Straight and relentless, thundering down every open line.', col: { base: '#3f9bff', emis: '#1a5fe0', rim: '#bfe0ff', metal: 0.50 } },
-  { key: 'gaja',   name: 'Gaja',   role: 'The War-Elephant', line: 'Crossing the field on the diagonal, an unstoppable tusker.', col: { base: '#37c07e', emis: '#0f7a4a', rim: '#a6f5cf', metal: 0.40 } },
-  { key: 'ashva',  name: 'Ashva',  role: 'The Cavalry',      line: 'The bold leap no other warrior on the field dares to make.', col: { base: '#ff9a30', emis: '#e0600e', rim: '#ffd070', metal: 0.35 } },
-  { key: 'padati', name: 'Padati', role: 'The Foot-Soldier', line: 'One honest step at a time — yet it may grow into anything.', col: { base: '#1fce67', emis: '#0e9a4c', rim: '#9ff0bd', metal: 0.30 } },
+  { model: 'assets/models/raja',              name: 'Rājā',            role: 'The King',        world: 'Kurukshetra', line: 'Guard the centre of your being — when the Self falls, all is lost.', col: { base: '#f6c343', emis: '#c98a10', rim: '#fff0b0', metal: 0.55 } },
+  { model: 'assets/ramayana/models/raja',     name: 'Rama',            role: 'The King',        world: 'Lanka',       line: 'Dharma given form — the prince who kept every vow.',              col: { base: '#4a9dff', emis: '#1a5fe0', rim: '#bfe0ff', metal: 0.50 } },
+  { model: 'assets/ramayana/models_dark/raja',name: 'Ravana',          role: 'The Rakshasa King', world: 'Lanka',     line: 'Ten-headed king of Lanka — brilliant, mighty, undone by pride.',   col: { base: '#ec3c2a', emis: '#b41010', rim: '#ff8a6a', metal: 0.50 } },
+  { model: 'assets/ramayana/models/ashva',    name: 'Hanuman',         role: 'The Cavalry',     world: 'Lanka',       line: 'The leap across the ocean — devotion that knows no distance.',     col: { base: '#ff8a2a', emis: '#d85808', rim: '#ffcf70', metal: 0.40 } },
+  { model: 'assets/kalinga/models/raja',      name: 'Ashoka',          role: 'The Emperor',     world: 'Kalinga',     line: 'The emperor whom victory itself turned toward peace.',             col: { base: '#f0b24a', emis: '#c07810', rim: '#ffe0a0', metal: 0.60 } },
+  { model: 'assets/kalinga/models_dark/raja', name: 'King of Kalinga', role: 'The Defender-King', world: 'Kalinga',   line: 'The defender who made an empire count its dead.',                  col: { base: '#4fb4bc', emis: '#1f7a86', rim: '#b6f2f6', metal: 0.72 } },
+  { model: 'assets/devasura/models/raja',     name: 'Indra',           role: 'Lord of the Devas', world: 'Devāsura',  line: 'King of the gods, wielder of the thunderbolt.',                    col: { base: '#ffdf8a', emis: '#e0a020', rim: '#fff4d0', metal: 0.45 } },
+  { model: 'assets/devasura/models/gaja',     name: 'Airāvata',        role: 'The Divine Elephant', world: 'Devāsura',line: 'The white elephant of the heavens, churned from the sea.',        col: { base: '#b6e8d6', emis: '#3aa07a', rim: '#eafff6', metal: 0.45 } },
+  { model: 'assets/devasura/models_dark/raja',name: 'Bali',            role: 'The Asura King',  world: 'Devāsura',    line: 'The noble asura king — generous even in defeat.',                  col: { base: '#c94dff', emis: '#9a1ed0', rim: '#f0c4ff', metal: 0.45 } },
+  { model: 'assets/ramayana/models_dark/gaja',name: 'Kumbhakarna',     role: 'The Sleeping Giant', world: 'Lanka',    line: 'The mountainous brother who woke only to war.',                    col: { base: '#d0532c', emis: '#9a2408', rim: '#ff9a5a', metal: 0.40 } },
+  { model: 'assets/devasura/models/ashva',    name: 'Uchchaihshravas', role: 'The Divine Steed',world: 'Devāsura',    line: 'The seven-headed steed, first of all horses.',                     col: { base: '#cfe0ff', emis: '#6a8ad0', rim: '#ffffff', metal: 0.62 } },
+  { model: 'assets/models/gaja',              name: 'Gaja',            role: 'The War-Elephant',world: 'Kurukshetra', line: 'The war-elephant crosses the field on the diagonal, unstoppable.', col: { base: '#cf9a52', emis: '#7a4e1e', rim: '#f0c890', metal: 0.85 } },
 ];
-const MODEL_BASE = 'assets/models';
 const ENV_URL = 'assets/kurukshetra/env.jpg';
 const TARGET_H = 2.1;
 
@@ -97,7 +102,7 @@ export function initShowcase(canvas) {
   }
 
   function heroMesh(hero) {
-    const base = models[hero.key]; if (!base) return null;
+    const base = models[hero.model]; if (!base) return null;
     const g = base.clone(true);
     const c = hero.col;
     g.traverse((n) => {
@@ -121,19 +126,19 @@ export function initShowcase(canvas) {
     halo.setColor(hero.col.rim);
     ring.material.color.set(hero.col.rim);
     // caption
-    setText('hcName', hero.name); setText('hcRole', hero.role); setText('hcLine', hero.line);
+    setText('hcName', hero.name); setText('hcRole', `${hero.role} · ${hero.world}`); setText('hcLine', hero.line);
     document.querySelectorAll('#hcDots [data-i]').forEach((d) => d.classList.toggle('on', +d.dataset.i === idx));
     if (!instant) { mesh.scale.multiplyScalar(0.6); mesh.userData.grow = 1; } // grow-in
     autoT = 0;
   }
   const setText = (id, t) => { const el = document.getElementById(id); if (el) { el.style.opacity = 0; setTimeout(() => { el.textContent = t; el.style.opacity = 1; }, 140); } };
 
-  // build the piece selector dots
+  // build the piece selector — a colour gem per hero
   const dots = document.getElementById('hcDots');
   if (dots) HEROES.forEach((h, i) => {
     const b = document.createElement('button'); b.dataset.i = i; b.className = 'hcdot';
-    b.setAttribute('aria-label', `${h.name} — ${h.role}`);
-    b.innerHTML = `<span style="background:${h.col.base}"></span>${h.name}`;
+    b.style.background = h.col.base; b.style.color = h.col.base;
+    b.title = `${h.name} — ${h.role} · ${h.world}`; b.setAttribute('aria-label', b.title);
     b.addEventListener('click', () => { show(i); paused = true; setTimeout(() => { paused = false; }, 6000); });
     dots.appendChild(b);
   });
@@ -179,10 +184,10 @@ export function initShowcase(canvas) {
   (async () => { for (let i = 1; i < HEROES.length; i++) await loadOne(i); })();
 
   function loadOne(i) {
-    const k = HEROES[i].key;
+    const k = HEROES[i].model;
     if (models[k]) return Promise.resolve();
     return new Promise((res) => {
-      loader.load(`${MODEL_BASE}/${k}.glb`, (gltf) => { models[k] = normalize(gltf.scene); res(); }, undefined, () => res());
+      loader.load(`${k}.glb`, (gltf) => { models[k] = normalize(gltf.scene); res(); }, undefined, () => res());
     });
   }
 
