@@ -4,147 +4,151 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Chaturanga — the four-army game of dharma</title>
-    <meta name="theme-color" content="#120a04" />
-    <meta name="description" content="Chaturanga — ancient Indian chess in glowing real-time 3D. A teaching AI with 5 levels, an openings trainer, four themed worlds with eight distinct armies, and vivid Warrior Styles that make every piece glow." />
+    <meta name="theme-color" content="#0d0703" />
+    <meta name="description" content="Chaturanga — ancient Indian chess in glowing real-time 3D. Meet the carved heroes in a live rotating showcase, play a teaching AI with 5 levels, and master four themed worlds with vivid Warrior Styles." />
     <meta property="og:title" content="Chaturanga — the four-army game of dharma" />
-    <meta property="og:description" content="Ancient Indian chess in glowing 3D: a teaching AI, an openings trainer, four themed worlds and vivid Warrior Styles with real bloom glow." />
+    <meta property="og:description" content="Ancient Indian chess in glowing 3D. A live rotating showcase of the carved heroes, a 5-level teaching AI, four worlds and vivid Warrior Styles." />
     <meta property="og:image" content="img/hero.jpg" />
     <meta property="og:type" content="website" />
     <link rel="icon" href="img/icon.png" />
+    <script type="importmap">
+      { "imports": { "three": "./vendor/three.module.js" } }
+    </script>
     <style>
-      :root {
-        --bg:#0d0703; --bg2:#160c05; --gold:#e8a33d; --gold2:#ffcf7a; --ink:#f5e8cf;
-        --muted:#b79b74; --line:rgba(232,163,61,.26); --card:rgba(58,33,14,.42);
-      }
-      * { box-sizing: border-box; }
-      html { scroll-behavior: smooth; }
-      body { margin:0; color:var(--ink); background:var(--bg);
-        font-family:"Iowan Old Style", Georgia, 'Noto Serif', serif; -webkit-font-smoothing:antialiased;
-        overflow-x:hidden; }
+      :root { --bg:#0d0703; --gold:#e8a33d; --gold2:#ffcf7a; --ink:#f5e8cf; --muted:#b79b74; --line:rgba(232,163,61,.26); --card:rgba(58,33,14,.42); }
+      * { box-sizing:border-box; }
+      html { scroll-behavior:smooth; }
+      body { margin:0; color:var(--ink); background:radial-gradient(130% 80% at 50% -10%, #38200f, #0d0703 60%);
+        font-family:"Iowan Old Style", Georgia, 'Noto Serif', serif; -webkit-font-smoothing:antialiased; overflow-x:hidden; }
       a { color:var(--gold2); text-decoration:none; }
-      .wrap { max-width:1080px; margin:0 auto; padding:0 1.2rem; }
+      .wrap { max-width:1120px; margin:0 auto; padding:0 1.2rem; }
 
       /* ---------- hero ---------- */
-      .hero { position:relative; min-height:min(94vh,860px); display:flex; align-items:center; justify-content:center;
-        text-align:center; overflow:hidden; padding:5rem 1rem 4rem; }
-      .hero .bg { position:absolute; inset:0; background:#0d0703 center/cover no-repeat; z-index:0;
-        transform:scale(1.06); filter:saturate(1.08); animation:drift 26s ease-in-out infinite alternate; }
-      @keyframes drift { from { transform:scale(1.06) translateY(0); } to { transform:scale(1.12) translateY(-14px); } }
-      .hero .scrim { position:absolute; inset:0; z-index:1;
-        background:
-          radial-gradient(120% 90% at 50% 8%, rgba(13,7,3,.15), rgba(13,7,3,.62) 55%, #0d0703 92%),
-          linear-gradient(180deg, rgba(13,7,3,.35) 0%, rgba(13,7,3,0) 30%, rgba(13,7,3,.75) 100%); }
-      .hero .inner { position:relative; z-index:2; max-width:760px; }
-      .kicker { display:inline-flex; align-items:center; gap:.5rem; font-size:.72rem; letter-spacing:.28em; text-transform:uppercase;
-        color:var(--gold2); border:1px solid var(--line); background:rgba(20,11,4,.55); padding:.42rem .9rem; border-radius:999px;
-        backdrop-filter:blur(4px); }
-      h1 { font-size:clamp(3rem,13vw,6.4rem); letter-spacing:.1em; margin:1rem 0 .2rem; line-height:.98;
-        background:linear-gradient(180deg,#fff4dc,#ffcf7a 45%,#e8a33d 78%,#b9722a);
-        -webkit-background-clip:text; background-clip:text; color:transparent;
-        text-shadow:0 0 60px rgba(232,163,61,.35); animation:glow 4.5s ease-in-out infinite; }
-      @keyframes glow { 0%,100% { filter:drop-shadow(0 0 22px rgba(232,163,61,.25)); } 50% { filter:drop-shadow(0 0 40px rgba(255,207,122,.5)); } }
-      .tag { color:#f0dcae; font-style:italic; font-size:clamp(1.05rem,3.4vw,1.4rem); margin:.4rem auto 1.6rem; max-width:34ch; text-shadow:0 2px 18px rgba(0,0,0,.7); }
-      .cta { display:flex; gap:.8rem; justify-content:center; flex-wrap:wrap; }
-      .btn { font:inherit; font-size:1.08rem; padding:.9rem 1.6rem; border-radius:14px; display:inline-flex; align-items:center; gap:.5rem;
-        min-height:54px; cursor:pointer; transition:transform .16s, box-shadow .16s, background .16s; }
-      .btn.play { background:linear-gradient(180deg,var(--gold2),var(--gold)); color:#241200; font-weight:700; border:0;
-        box-shadow:0 14px 34px rgba(232,163,61,.42); }
-      .btn.dl { background:rgba(20,11,4,.55); color:var(--ink); border:1px solid var(--line); backdrop-filter:blur(4px); }
+      .hero { display:grid; grid-template-columns:1.02fr 1fr; gap:1.6rem; align-items:center; min-height:88vh; padding:4.2rem 0 2.4rem; }
+      .hero-copy { position:relative; z-index:2; }
+      .kicker { display:inline-flex; align-items:center; gap:.5rem; font-size:.72rem; letter-spacing:.26em; text-transform:uppercase;
+        color:var(--gold2); border:1px solid var(--line); background:rgba(20,11,4,.5); padding:.42rem .9rem; border-radius:999px; }
+      h1 { font-size:clamp(2.8rem,8vw,5rem); letter-spacing:.08em; line-height:.98; margin:1rem 0 .3rem;
+        background:linear-gradient(180deg,#fff4dc,#ffcf7a 45%,#e8a33d 78%,#b9722a); -webkit-background-clip:text; background-clip:text; color:transparent;
+        text-shadow:0 0 60px rgba(232,163,61,.3); animation:glow 4.5s ease-in-out infinite; }
+      @keyframes glow { 0%,100% { filter:drop-shadow(0 0 20px rgba(232,163,61,.22)); } 50% { filter:drop-shadow(0 0 38px rgba(255,207,122,.45)); } }
+      .tag { color:#f0dcae; font-style:italic; font-size:clamp(1.05rem,3.2vw,1.35rem); margin:.4rem 0 1.5rem; max-width:36ch; }
+      .cta { display:flex; gap:.75rem; flex-wrap:wrap; }
+      .btn { font:inherit; font-size:1.05rem; padding:.85rem 1.5rem; border-radius:14px; display:inline-flex; align-items:center; gap:.5rem;
+        min-height:54px; cursor:pointer; transition:transform .16s, box-shadow .16s; }
+      .btn.play { background:linear-gradient(180deg,var(--gold2),var(--gold)); color:#241200; font-weight:700; border:0; box-shadow:0 14px 34px rgba(232,163,61,.42); }
+      .btn.dl { background:rgba(20,11,4,.5); color:var(--ink); border:1px solid var(--line); }
       .btn:hover { transform:translateY(-3px); }
       .btn.play:hover { box-shadow:0 18px 44px rgba(255,207,122,.55); }
-      .hero .note { color:#d9c299; font-size:.84rem; margin-top:1rem; text-shadow:0 2px 12px rgba(0,0,0,.7); }
-      .badges { display:flex; gap:.5rem; justify-content:center; flex-wrap:wrap; margin-top:1.4rem; }
-      .badge { font-size:.74rem; color:#e9d3a6; border:1px solid var(--line); border-radius:999px; padding:.35rem .8rem; background:rgba(20,11,4,.45); }
+      .note { color:#d9c299; font-size:.84rem; margin-top:.9rem; }
+      .badges { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:1.3rem; }
+      .badge { font-size:.74rem; color:#e9d3a6; border:1px solid var(--line); border-radius:999px; padding:.35rem .8rem; background:rgba(20,11,4,.4); }
+
+      /* live showcase */
+      #heroShowcase { position:relative; z-index:1; border:1px solid var(--line); border-radius:26px; overflow:hidden;
+        min-height:520px; height:min(70vh,600px);
+        background:radial-gradient(80% 70% at 50% 38%, rgba(60,34,14,.5), rgba(13,7,3,.2) 70%), #0b0602;
+        box-shadow:0 30px 80px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,207,122,.06); }
+      #heroCanvas { width:100%; height:100%; display:block; touch-action:none; cursor:grab; }
+      #heroCanvas:active { cursor:grabbing; }
+      #heroShowcase.nofx { background:#0b0602 url('img/hero.jpg') center/cover no-repeat; }
+      #heroShowcase.nofx #heroCanvas, #heroShowcase.nofx .hc-cap, #heroShowcase.nofx #hcDots, #heroShowcase.nofx .hc-hint { display:none; }
+      .hc-cap { position:absolute; left:1.2rem; bottom:3.4rem; max-width:70%; pointer-events:none; text-shadow:0 3px 18px rgba(0,0,0,.8); }
+      #hcName { display:block; font-size:1.9rem; color:#fff2d6; transition:opacity .25s; }
+      #hcRole { display:block; font-size:.78rem; letter-spacing:.22em; text-transform:uppercase; color:var(--gold2); margin-top:.1rem; transition:opacity .25s; }
+      #hcLine { display:block; color:#e2caa0; font-style:italic; font-size:.92rem; margin-top:.45rem; max-width:34ch; transition:opacity .25s; }
+      .hc-hint { position:absolute; top:.9rem; right:1rem; font-size:.72rem; color:#c9ad80; border:1px solid var(--line); border-radius:999px; padding:.28rem .7rem; background:rgba(11,6,2,.5); }
+      #hcDots { position:absolute; left:0; right:0; bottom:.8rem; display:flex; gap:.4rem; justify-content:center; flex-wrap:wrap; padding:0 .6rem; }
+      .hcdot { font:inherit; font-size:.76rem; color:#e9d3a6; background:rgba(11,6,2,.6); border:1px solid var(--line); border-radius:999px;
+        padding:.28rem .6rem .28rem .5rem; display:inline-flex; align-items:center; gap:.35rem; cursor:pointer; transition:.15s; backdrop-filter:blur(3px); }
+      .hcdot span { width:11px; height:11px; border-radius:50%; box-shadow:0 0 8px currentColor; }
+      .hcdot:hover { border-color:rgba(232,163,61,.6); }
+      .hcdot.on { background:linear-gradient(180deg,var(--gold2),var(--gold)); color:#241200; border-color:transparent; font-weight:700; }
+      @media (max-width:860px) {
+        .hero { grid-template-columns:1fr; gap:1.2rem; min-height:auto; padding-top:3rem; text-align:center; }
+        .hero-copy { order:1; } #heroShowcase { order:2; height:64vh; min-height:440px; }
+        .cta, .badges { justify-content:center; } .tag { margin-inline:auto; }
+        .hc-cap { max-width:60%; }
+      }
 
       /* ---------- sections ---------- */
       section { padding:3.4rem 0; }
       .eyebrow { text-align:center; font-size:.74rem; letter-spacing:.24em; text-transform:uppercase; color:var(--gold); opacity:.9; margin:0 0 .5rem; }
-      .h2 { text-align:center; font-size:clamp(1.7rem,5vw,2.5rem); margin:0 0 .4rem;
-        background:linear-gradient(180deg,#fff4dc,#ffcf7a 60%,#e8a33d); -webkit-background-clip:text; background-clip:text; color:transparent; }
-      .lead { text-align:center; color:var(--muted); max-width:60ch; margin:0 auto 2rem; line-height:1.6; font-size:1.02rem; }
+      .h2 { text-align:center; font-size:clamp(1.7rem,5vw,2.5rem); margin:0 0 .4rem; background:linear-gradient(180deg,#fff4dc,#ffcf7a 60%,#e8a33d); -webkit-background-clip:text; background-clip:text; color:transparent; }
+      .lead { text-align:center; color:var(--muted); max-width:62ch; margin:0 auto 2rem; line-height:1.6; font-size:1.02rem; }
       .divider { height:1px; background:linear-gradient(90deg,transparent,var(--line),transparent); border:0; margin:0; }
 
-      /* new-in banner */
-      .newin { position:relative; border:1px solid var(--line); border-radius:22px; overflow:hidden;
-        background:linear-gradient(180deg,rgba(40,22,10,.6),rgba(15,8,3,.7)); }
-      .newin .row { display:grid; grid-template-columns:1.15fr 1fr; gap:0; align-items:stretch; }
-      .newin figure { margin:0; }
-      .newin figure img { width:100%; height:100%; object-fit:cover; display:block; min-height:280px; }
+      .newin { position:relative; border:1px solid var(--line); border-radius:22px; overflow:hidden; background:linear-gradient(180deg,rgba(40,22,10,.6),rgba(15,8,3,.7)); }
+      .newin .row { display:grid; grid-template-columns:1.15fr 1fr; align-items:stretch; }
+      .newin figure { margin:0; } .newin figure img { width:100%; height:100%; object-fit:cover; display:block; min-height:280px; }
       .newin .txt { padding:2rem 2.1rem; align-self:center; }
-      .newin .pill { display:inline-block; font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:#241200;
-        background:linear-gradient(180deg,var(--gold2),var(--gold)); padding:.32rem .7rem; border-radius:999px; font-weight:700; }
+      .newin .pill { display:inline-block; font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:#241200; background:linear-gradient(180deg,var(--gold2),var(--gold)); padding:.32rem .7rem; border-radius:999px; font-weight:700; }
       .newin h3 { font-size:1.7rem; margin:.7rem 0 .5rem; color:#ffe6bb; }
       .newin p { color:#d9c299; line-height:1.6; margin:0 0 .6rem; }
       @media (max-width:720px){ .newin .row{ grid-template-columns:1fr; } .newin figure img{ min-height:220px; } }
 
-      /* warrior styles gallery */
       .styles { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:1rem; }
-      .style { position:relative; border-radius:18px; overflow:hidden; border:1px solid var(--line);
-        background:#0d0703; box-shadow:0 12px 30px rgba(0,0,0,.5); transition:transform .18s, box-shadow .18s; }
+      .style { position:relative; border-radius:18px; overflow:hidden; border:1px solid var(--line); background:#0d0703; box-shadow:0 12px 30px rgba(0,0,0,.5); transition:transform .18s, box-shadow .18s; }
       .style:hover { transform:translateY(-4px); box-shadow:0 20px 46px rgba(0,0,0,.6); }
       .style img { width:100%; aspect-ratio:11/9; object-fit:cover; display:block; }
-      .style .cap { position:absolute; left:0; right:0; bottom:0; padding:1.4rem .9rem .7rem;
-        background:linear-gradient(180deg,transparent,rgba(8,4,1,.86)); display:flex; align-items:center; gap:.5rem; }
+      .style .cap { position:absolute; left:0; right:0; bottom:0; padding:1.4rem .9rem .7rem; background:linear-gradient(180deg,transparent,rgba(8,4,1,.86)); display:flex; align-items:center; gap:.5rem; }
       .style .dot { width:12px; height:12px; border-radius:50%; box-shadow:0 0 12px currentColor; }
-      .style .nm { font-size:.98rem; color:#fff2d6; }
-      .style .gl { margin-left:auto; font-size:.72rem; color:#ffd98a; }
+      .style .nm { font-size:.98rem; color:#fff2d6; } .style .gl { margin-left:auto; font-size:.72rem; color:#ffd98a; }
 
-      /* feature cards */
       .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:.9rem; }
-      .card { background:linear-gradient(180deg,var(--card),rgba(15,8,3,.55)); border:1px solid var(--line); border-radius:16px;
-        padding:1.2rem 1.3rem; transition:transform .16s, border-color .16s, box-shadow .16s; }
+      .card { background:linear-gradient(180deg,var(--card),rgba(15,8,3,.55)); border:1px solid var(--line); border-radius:16px; padding:1.2rem 1.3rem; transition:transform .16s, border-color .16s, box-shadow .16s; }
       .card:hover { transform:translateY(-3px); border-color:rgba(232,163,61,.55); box-shadow:0 14px 34px rgba(0,0,0,.45); }
       .card .ic { font-size:1.6rem; filter:drop-shadow(0 0 12px rgba(232,163,61,.4)); }
-      .card h3 { margin:.4rem 0 .35rem; color:#ffe6bb; font-size:1.1rem; }
-      .card p { margin:0; color:var(--muted); line-height:1.55; font-size:.94rem; }
+      .card h3 { margin:.4rem 0 .35rem; color:#ffe6bb; font-size:1.1rem; } .card p { margin:0; color:var(--muted); line-height:1.55; font-size:.94rem; }
 
-      /* worlds */
       .worlds { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem; }
       .world { position:relative; border-radius:18px; overflow:hidden; border:1px solid var(--line); box-shadow:0 12px 30px rgba(0,0,0,.5); }
       .world img { width:100%; aspect-ratio:16/11; object-fit:cover; display:block; transition:transform .3s; }
       .world:hover img { transform:scale(1.05); }
-      .world .cap { position:absolute; inset:auto 0 0 0; padding:1.6rem 1rem .8rem;
-        background:linear-gradient(180deg,transparent,rgba(8,4,1,.88)); }
-      .world .cap b { color:#fff2d6; font-size:1.05rem; display:block; }
-      .world .cap span { color:#cbb083; font-size:.85rem; }
+      .world .cap { position:absolute; inset:auto 0 0 0; padding:1.6rem 1rem .8rem; background:linear-gradient(180deg,transparent,rgba(8,4,1,.88)); }
+      .world .cap b { color:#fff2d6; font-size:1.05rem; display:block; } .world .cap span { color:#cbb083; font-size:.85rem; }
 
-      /* screens */
       .screens { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.9rem; }
-      .screens figure { margin:0; }
-      .screens img { width:100%; border-radius:14px; border:1px solid var(--line); box-shadow:0 10px 26px rgba(0,0,0,.5); display:block; }
+      .screens figure { margin:0; } .screens img { width:100%; border-radius:14px; border:1px solid var(--line); box-shadow:0 10px 26px rgba(0,0,0,.5); display:block; }
       .screens figcaption { text-align:center; color:var(--muted); font-size:.82rem; margin-top:.5rem; }
 
-      .foot-cta { text-align:center; background:linear-gradient(180deg,rgba(40,22,10,.5),rgba(15,8,3,.2)); border:1px solid var(--line);
-        border-radius:22px; padding:2.6rem 1.4rem; }
-      footer { text-align:center; color:var(--muted); padding:2.2rem 1rem 3rem; font-size:.86rem; }
-      footer a { color:var(--gold); }
+      .foot-cta { text-align:center; background:linear-gradient(180deg,rgba(40,22,10,.5),rgba(15,8,3,.2)); border:1px solid var(--line); border-radius:22px; padding:2.6rem 1.4rem; }
+      footer { text-align:center; color:var(--muted); padding:2.2rem 1rem 3rem; font-size:.86rem; } footer a { color:var(--gold); }
     </style>
   </head>
   <body>
-    <!-- HERO -->
-    <header class="hero">
-      <div class="bg" style="background-image:url('img/hero.jpg')"></div>
-      <div class="scrim"></div>
-      <div class="inner">
-        <span class="kicker">◆ The four-army game of dharma ◆</span>
-        <h1>Chaturanga</h1>
-        <p class="tag">Ancient Indian chess, reborn in glowing real-time 3D — play, and learn its dharma.</p>
-        <div class="cta">
-          <a class="btn play" href="setup.html">⚔ Play in your browser</a>
-          <a class="btn dl" href="https://github.com/naveenneog/Chaturanga/releases/download/v1.1.0/Chaturanga-v1.1.0.apk">⬇ Download Android APK</a>
-        </div>
-        <p class="note">Real-3D · works offline · no sign-in · a teaching AI that explains every move.</p>
-        <div class="badges">
-          <span class="badge">✨ Bloom glow</span>
-          <span class="badge">🎨 11 Warrior Styles</span>
-          <span class="badge">🌍 4 worlds · 8 armies</span>
-          <span class="badge">🧠 5-level AI + coach</span>
-          <span class="badge">🎲 3D &amp; 2D</span>
-        </div>
-      </div>
-    </header>
-
     <div class="wrap">
+      <!-- HERO with live rotating 3D showcase -->
+      <header class="hero">
+        <div class="hero-copy">
+          <span class="kicker">◆ The four-army game of dharma ◆</span>
+          <h1>Chaturanga</h1>
+          <p class="tag">Ancient Indian chess, reborn in glowing real-time 3D — meet the carved heroes, then command them.</p>
+          <div class="cta">
+            <a class="btn play" href="setup.html">⚔ Play in your browser</a>
+            <a class="btn dl" href="https://github.com/naveenneog/Chaturanga/releases/download/v1.1.0/Chaturanga-v1.1.0.apk">⬇ Download Android APK</a>
+          </div>
+          <p class="note">Real-3D · works offline · no sign-in · a teaching AI that explains every move.</p>
+          <div class="badges">
+            <span class="badge">✨ Bloom glow</span>
+            <span class="badge">🎨 11 Warrior Styles</span>
+            <span class="badge">🌍 4 worlds · 8 armies</span>
+            <span class="badge">🧠 5-level AI + coach</span>
+            <span class="badge">🎲 3D &amp; 2D</span>
+          </div>
+        </div>
+        <div id="heroShowcase" aria-label="Rotating 3D showcase of the carved pieces">
+          <canvas id="heroCanvas"></canvas>
+          <span class="hc-hint">drag to spin · auto-rotating</span>
+          <div class="hc-cap">
+            <span id="hcName">Rājā</span>
+            <span id="hcRole">The King</span>
+            <span id="hcLine">Where the king stands, the whole host finds its purpose.</span>
+          </div>
+          <div id="hcDots"></div>
+        </div>
+      </header>
+
       <!-- NEW IN v1.1 -->
       <section>
         <div class="newin">
@@ -153,8 +157,8 @@
             <div class="txt">
               <span class="pill">New in v1.1 · Glow &amp; Glory</span>
               <h3>Every warrior, forged in light</h3>
-              <p>A brand-new rendering pipeline gives the carved pieces <b>real bloom glow</b> and a fresnel edge-light, so each army reads as a sculpted, radiant figure — never a flat tint.</p>
-              <p>Pick from <b>eleven Warrior Styles</b> — Divine Radiance, Blood &amp; Iron, Jade Warrior, Celestial Azure and more — each recolouring both armies in vivid, distinct hues that shimmer under the ✨ Glow effect.</p>
+              <p>A brand-new rendering pipeline gives the carved pieces <b>real bloom glow</b> and a fresnel edge-light — the same glow you see rotating above — so each army reads as a sculpted, radiant figure, never a flat tint.</p>
+              <p>Pick from <b>eleven Warrior Styles</b> — Divine Radiance, Blood &amp; Iron, Jade Warrior, Celestial Azure and more — each recolouring both armies in vivid, distinct hues.</p>
             </div>
           </div>
         </div>
@@ -222,9 +226,9 @@
         <div class="foot-cta">
           <h2 class="h2">Step onto the field of dharma</h2>
           <p class="lead">No sign-in. No download required to play. Just open and learn.</p>
-          <div class="cta">
+          <div class="cta" style="justify-content:center">
             <a class="btn play" href="setup.html">⚔ Play now</a>
-            <a class="btn dl" href="https://github.com/naveenneog/Chaturanga/releases/latest">⬇ Get the Android app</a>
+            <a class="btn dl" href="https://github.com/naveenneog/Chaturanga/releases/download/v1.1.0/Chaturanga-v1.1.0.apk">⬇ Download Android APK</a>
           </div>
         </div>
       </section>
@@ -236,5 +240,7 @@
         Licensed <a href="https://polyformproject.org/licenses/noncommercial/1.0.0/">PolyForm Noncommercial 1.0.0</a></p>
       <p>Chess rules via chess.js · rendered with Three.js + bloom · pieces reconstructed with Hunyuan3D-2 · intros by Azure Sora-2 · narration by Azure DragonHD.</p>
     </footer>
+
+    <script type="module" src="js/showcase.js"></script>
   </body>
 </html>
